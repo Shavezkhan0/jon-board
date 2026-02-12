@@ -53,7 +53,7 @@ export default function PricingSection({ user, isActive, subscription }: Pricing
     setError('')
 
     try {
-      const res = await fetch('/api/payment/test-subscribe', {
+      const res = await fetch('/api/payment/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan: selectedPlan }),
@@ -62,32 +62,101 @@ export default function PricingSection({ user, isActive, subscription }: Pricing
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || 'Failed to activate subscription')
+        setError(data.message || 'Failed to create order')
         setTestLoading(false)
         return
       }
 
-      // Success!
-      setShowModal(false)
-      setSubscriptionData(data.subscription)
-      setShowSuccess(true)
-      setSelectedPlan(null)
+      // Check for bypass mode (dummy key)
+      if (data.keyId === 'dummy_key') {
+        // Bypass Razorpay modal and verify immediately
+        const verifyRes = await fetch('/api/payment/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            razorpay_order_id: data.orderId,
+            razorpay_payment_id: 'pay_bypass_' + Date.now(),
+            razorpay_signature: 'dummy_signature', // distinct from bypass_signature to test valid mocking
+            plan: selectedPlan,
+          }),
+        })
 
-      toast('🎉 Subscription Activated!', 'success')
+        const verifyData = await verifyRes.json()
 
-      // Refresh user state immediately
-      await refreshUser()
+        if (verifyRes.ok) {
+          handleSuccess(verifyData.subscription)
+        } else {
+          setError(verifyData.message || 'Verification failed')
+        }
+        setTestLoading(false)
+        return
+      }
 
-      // Redirect to dashboard after 3 seconds
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 3000)
+      // Initialize Razorpay
+      const options = {
+        key: data.keyId,
+        amount: data.amount,
+        currency: data.currency,
+        name: 'Job Board Pro',
+        description: `${data.planDetails.name} Subscription`,
+        order_id: data.orderId,
+        handler: async function (response: any) {
+          try {
+            const verifyRes = await fetch('/api/payment/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                plan: selectedPlan,
+              }),
+            })
+
+            const verifyData = await verifyRes.json()
+
+            if (verifyRes.ok) {
+              handleSuccess(verifyData.subscription)
+            } else {
+              setError(verifyData.message || 'Payment verification failed')
+            }
+          } catch (error) {
+            console.error('Verification error:', error)
+            setError('Payment verification failed')
+          }
+        },
+        prefill: {
+          name: user.fullName,
+          email: user.email,
+        },
+        theme: {
+          color: '#4f46e5',
+        },
+      }
+
+      const rzp = new (window as any).Razorpay(options)
+      rzp.on('payment.failed', function (response: any) {
+        setError(response.error.description)
+      })
+      rzp.open()
     } catch (err) {
-      console.error('Test subscription error:', err)
+      console.error('Subscription error:', err)
       setError('Something went wrong. Please try again.')
     } finally {
       setTestLoading(false)
     }
+  }
+
+  const handleSuccess = async (subscription: any) => {
+    setShowModal(false)
+    setSubscriptionData(subscription)
+    setShowSuccess(true)
+    setSelectedPlan(null)
+    toast('🎉 Subscription Activated!', 'success')
+    await refreshUser()
+    setTimeout(() => {
+      router.push('/dashboard')
+    }, 3000)
   }
 
   const handleCancelModal = () => {
