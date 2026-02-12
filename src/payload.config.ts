@@ -1,5 +1,6 @@
 import { mongooseAdapter } from '@payloadcms/db-mongodb'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
@@ -31,20 +32,16 @@ export default buildConfig({
     url: process.env.DATABASE_URI || '',
   }),
   serverURL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-  cors: [
-    process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-    'http://localhost:3000',
-  ],
-  email: {
-    transport: {
-      provider: 'resend',
-      apiKey: process.env.RESEND_API_KEY || '',
-      defaultFromAddress: 'noreply@jobboard.com',
-      defaultFromName: 'Job Board',
+  cors: [process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000', 'http://localhost:3000'],
+  email: nodemailerAdapter({
+    defaultFromAddress: 'noreply@jobboard.com',
+    defaultFromName: 'Job Board',
+    // Using console transport for development (logs emails to console instead of sending)
+    // In production, configure with your SMTP server details
+    transportOptions: {
+      jsonTransport: true, // Log emails to console in JSON format
     },
-    fromName: 'Job Board',
-    fromAddress: 'noreply@jobboard.com',
-  },
+  }),
   upload: {
     staticDir: 'public/media',
     staticURL: '/media',
