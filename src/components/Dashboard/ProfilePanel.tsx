@@ -30,7 +30,7 @@ export default function ProfilePanel({ user }: ProfilePanelProps) {
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null)
   const [profilePhotoPreview, setProfilePhotoPreview] = useState<string>(
-    user.profilePhoto?.url || '',
+    (typeof user.profilePhoto !== 'string' && user.profilePhoto?.url) || '',
   )
   const [newSkill, setNewSkill] = useState('')
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)

@@ -72,6 +72,8 @@ export interface Config {
     jobs: Job;
     subscriptions: Subscription;
     'saved-jobs': SavedJob;
+    notifications: Notification;
+    'user-notifications': UserNotification;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -84,6 +86,8 @@ export interface Config {
     jobs: JobsSelect<false> | JobsSelect<true>;
     subscriptions: SubscriptionsSelect<false> | SubscriptionsSelect<true>;
     'saved-jobs': SavedJobsSelect<false> | SavedJobsSelect<true>;
+    notifications: NotificationsSelect<false> | NotificationsSelect<true>;
+    'user-notifications': UserNotificationsSelect<false> | UserNotificationsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -126,6 +130,10 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: string;
+  /**
+   * User roles
+   */
+  roles: ('admin' | 'user')[];
   /**
    * User's full name
    */
@@ -281,9 +289,13 @@ export interface Job {
    */
   location: string;
   /**
-   * Is this a remote position?
+   * Work location type
    */
-  isRemote?: boolean | null;
+  workMode: 'office' | 'remote' | 'hybrid' | 'flexible';
+  /**
+   * Office address for walk-in/interviews (shown only for Office/Hybrid modes)
+   */
+  officeAddress?: string | null;
   /**
    * Type of employment
    */
@@ -306,6 +318,14 @@ export interface Job {
    * Required experience level
    */
   experienceLevel: 'fresher' | 'junior' | 'mid-level' | 'senior' | 'lead' | 'manager';
+  /**
+   * Minimum years of experience required
+   */
+  experienceYearsMin?: number | null;
+  /**
+   * Maximum years of experience required
+   */
+  experienceYearsMax?: number | null;
   /**
    * Minimum salary (optional)
    */
@@ -337,9 +357,45 @@ export interface Job {
     [k: string]: unknown;
   };
   /**
-   * Job requirements
+   * Job requirements and qualifications
    */
   requirements: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * Optional message/note for applicants (e.g., interview process, timeline, special instructions)
+   */
+  message?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Key job responsibilities and day-to-day tasks
+   */
+  responsibilities: {
     root: {
       type: string;
       children: {
@@ -373,13 +429,29 @@ export interface Job {
     [k: string]: unknown;
   } | null;
   /**
-   * Application link or email
+   * Application link (optional if HR contact provided)
    */
-  applyLink: string;
+  applyLink?: string | null;
   /**
    * Application email (optional)
    */
   applyEmail?: string | null;
+  /**
+   * Does this job accept employee referrals?
+   */
+  acceptsReferrals?: boolean | null;
+  /**
+   * HR contact person name (optional)
+   */
+  hrContactName?: string | null;
+  /**
+   * HR contact email (optional)
+   */
+  hrEmail?: string | null;
+  /**
+   * HR contact phone number (optional)
+   */
+  hrPhone?: string | null;
   /**
    * Required skills (max 15)
    */
@@ -419,13 +491,19 @@ export interface Job {
    */
   applicationCount?: number | null;
   /**
-   * Job expiry date
+   * Job expiry date (optional - leave empty for no expiry)
    */
-  expiresAt: string;
+  expiresAt?: string | null;
   /**
    * Date when job was posted
    */
   postedAt?: string | null;
+  /**
+   * Has notification been sent for this job?
+   */
+  notificationSent?: boolean | null;
+  notificationSentAt?: string | null;
+  notificationSentTo?: ('all' | 'subscribed' | 'selected') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -509,6 +587,42 @@ export interface SavedJob {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications".
+ */
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'new_job' | 'subscription_expiry' | 'subscription_expired' | 'general' | 'job_alert';
+  job?: (string | null) | Job;
+  recipient: 'all' | 'subscribed' | 'selected';
+  selectedUsers?:
+    | {
+        email: string;
+        id?: string | null;
+      }[]
+    | null;
+  sentAt?: string | null;
+  totalRecipients?: number | null;
+  emailAlsoSent?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "user-notifications".
+ */
+export interface UserNotification {
+  id: string;
+  user: string | User;
+  notification: string | Notification;
+  isRead?: boolean | null;
+  readAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -550,6 +664,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'saved-jobs';
         value: string | SavedJob;
+      } | null)
+    | ({
+        relationTo: 'notifications';
+        value: string | Notification;
+      } | null)
+    | ({
+        relationTo: 'user-notifications';
+        value: string | UserNotification;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -598,6 +720,7 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  roles?: T;
   fullName?: T;
   phone?: T;
   profilePhoto?: T;
@@ -699,18 +822,27 @@ export interface JobsSelect<T extends boolean = true> {
   companyLogo?: T;
   companyWebsite?: T;
   location?: T;
-  isRemote?: T;
+  workMode?: T;
+  officeAddress?: T;
   jobType?: T;
   category?: T;
   experienceLevel?: T;
+  experienceYearsMin?: T;
+  experienceYearsMax?: T;
   salaryMin?: T;
   salaryMax?: T;
   salaryCurrency?: T;
   description?: T;
   requirements?: T;
+  message?: T;
+  responsibilities?: T;
   niceToHave?: T;
   applyLink?: T;
   applyEmail?: T;
+  acceptsReferrals?: T;
+  hrContactName?: T;
+  hrEmail?: T;
+  hrPhone?: T;
   skills?:
     | T
     | {
@@ -730,6 +862,9 @@ export interface JobsSelect<T extends boolean = true> {
   applicationCount?: T;
   expiresAt?: T;
   postedAt?: T;
+  notificationSent?: T;
+  notificationSentAt?: T;
+  notificationSentTo?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -761,6 +896,40 @@ export interface SavedJobsSelect<T extends boolean = true> {
   user?: T;
   job?: T;
   savedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications_select".
+ */
+export interface NotificationsSelect<T extends boolean = true> {
+  title?: T;
+  message?: T;
+  type?: T;
+  job?: T;
+  recipient?: T;
+  selectedUsers?:
+    | T
+    | {
+        email?: T;
+        id?: T;
+      };
+  sentAt?: T;
+  totalRecipients?: T;
+  emailAlsoSent?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "user-notifications_select".
+ */
+export interface UserNotificationsSelect<T extends boolean = true> {
+  user?: T;
+  notification?: T;
+  isRead?: T;
+  readAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

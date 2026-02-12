@@ -12,6 +12,8 @@ import { Media } from './collections/Media'
 import { Jobs } from './collections/Jobs'
 import { Subscriptions } from './collections/Subscriptions'
 import { SavedJobs } from './collections/SavedJobs'
+import Notifications from './collections/Notifications'
+import UserNotifications from './collections/UserNotifications'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -23,7 +25,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, Jobs, Subscriptions, SavedJobs],
+  collections: [Users, Media, Jobs, Subscriptions, SavedJobs, Notifications, UserNotifications],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

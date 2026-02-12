@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
             razorpayOrderId: order.id,
             amount: planDetails.amount,
             currency: 'INR',
-            expiresAt: addDays(new Date(), planDetails.duration),
+            expiresAt: addDays(new Date(), planDetails.duration).toISOString(),
             isVerified: false,
           },
         })
@@ -98,11 +98,8 @@ export async function POST(request: NextRequest) {
 
         // Try to rollback Razorpay order by marking it as failed
         if (!isBypassMode) {
-          try {
-            await razorpay.orders.payments(order.id)
-          } catch (rollbackError) {
-            console.error('Error rolling back Razorpay order:', rollbackError)
-          }
+          // Razorpay orders cannot be explicitly deleted/cancelled via API,
+          // they simply remain unpaid if not processed.
         }
 
         return NextResponse.json(

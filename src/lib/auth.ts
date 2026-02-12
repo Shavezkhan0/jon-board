@@ -3,6 +3,8 @@ import config from '@payload-config'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
+import jwt from 'jsonwebtoken'
+
 export async function getCurrentUser() {
   const payload = await getPayload({ config })
   const cookieStore = await cookies()
@@ -14,7 +16,6 @@ export async function getCurrentUser() {
 
   try {
     // Decode token without verification
-    const jwt = require('jsonwebtoken')
     const decoded = jwt.decode(token) as any
     const userId = decoded?.id || decoded?.sub
 
@@ -52,7 +53,7 @@ export function isSubscriptionActive(user: any): boolean {
 }
 
 export async function getAuthHeaders(): Promise<Record<string, string>> {
-  const token = cookies().get('payload-token')?.value
+  const token = (await cookies()).get('payload-token')?.value
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

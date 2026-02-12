@@ -10,9 +10,10 @@ export type PlanType = 'monthly' | 'quarterly' | 'yearly'
 export const PLANS = {
   monthly: {
     name: 'Monthly',
-    amount: 49900,
+    amount: 100,
     duration: 30,
     description: 'Perfect for getting started',
+    savings: undefined,
   },
   quarterly: {
     name: 'Quarterly',

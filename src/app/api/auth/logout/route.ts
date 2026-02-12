@@ -3,7 +3,7 @@ import { cookies } from 'next/headers'
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
 
     // Clear the auth cookie
     cookieStore.set('payload-token', '', {
@@ -20,9 +20,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Logout error:', error)
-    return NextResponse.json(
-      { success: false, message: 'Failed to logout' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, message: 'Failed to logout' }, { status: 500 })
   }
 }

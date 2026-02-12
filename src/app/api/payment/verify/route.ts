@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     const payload = await getPayload({ config })
     const planDetails = PLANS[plan]
-    const expiresAt = addDays(new Date(), planDetails.duration)
+    const expiresAt = addDays(new Date(), planDetails.duration).toISOString()
 
     try {
       // Update subscription document

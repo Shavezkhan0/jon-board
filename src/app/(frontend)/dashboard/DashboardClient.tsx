@@ -72,9 +72,9 @@ export default function DashboardClient({
           {/* User Info */}
           <div className="p-6 border-b border-slate-800">
             <div className="flex items-center space-x-3">
-              {user.profilePhoto ? (
+              {user.profilePhoto && typeof user.profilePhoto !== 'string' ? (
                 <img
-                  src={user.profilePhoto.url}
+                  src={user.profilePhoto.url || ''}
                   alt={user.fullName}
                   className="w-10 h-10 rounded-full object-cover"
                 />

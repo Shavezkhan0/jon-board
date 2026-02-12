@@ -2,16 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { SubscriptionResponse } from '@/types'
 import type { PaymentHistoryResponse, PaymentHistoryItem } from '@/types/subscription'
 
 interface SubscriptionPanelProps {
-  subscriptionStatus: {
-    status: 'none' | 'active' | 'expired' | 'cancelled'
-    plan: 'monthly' | 'quarterly' | 'yearly' | null
-    expiryDate: string | null
-    daysRemaining: number
-    isActive: boolean
-  }
+  subscriptionStatus: SubscriptionResponse
 }
 
 export default function SubscriptionPanel({ subscriptionStatus }: SubscriptionPanelProps) {

@@ -137,7 +137,7 @@ export const Subscriptions: CollectionConfig = {
   ],
   access: {
     read: ({ req: { user } }) => {
-      if (user?.roles?.includes('admin')) return true
+      if ((user as any)?.roles?.includes('admin')) return true
       return {
         user: {
           equals: user?.id,
@@ -145,13 +145,13 @@ export const Subscriptions: CollectionConfig = {
       }
     },
     create: ({ req: { user } }) => {
-      return user?.roles?.includes('admin') || false
+      return (user as any)?.roles?.includes('admin') || false
     },
     update: ({ req: { user } }) => {
-      return user?.roles?.includes('admin') || false
+      return (user as any)?.roles?.includes('admin') || false
     },
     delete: ({ req: { user } }) => {
-      return user?.roles?.includes('admin') || false
+      return (user as any)?.roles?.includes('admin') || false
     },
   },
 }

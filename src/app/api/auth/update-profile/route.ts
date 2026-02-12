@@ -21,41 +21,27 @@ interface ValidationError {
 export async function PUT(request: NextRequest) {
   try {
     // Authenticate user from cookie
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const token = cookieStore.get('payload-token')?.value
 
     if (!token) {
-      return NextResponse.json(
-        { success: false, message: 'Not authenticated' },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
     }
 
     const payload = await getPayload({ config })
 
     try {
-      const { user } = await payload.verifyToken({
+      const { user } = await (payload as any).verifyToken({
         collection: 'users',
         token,
       })
 
       if (!user) {
-        return NextResponse.json(
-          { success: false, message: 'Invalid token' },
-          { status: 401 }
-        )
+        return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
       }
 
       const body: UpdateProfileRequest = await request.json()
-      const {
-        fullName,
-        phone,
-        currentJobTitle,
-        bio,
-        linkedinUrl,
-        resumeUrl,
-        skills,
-      } = body
+      const { fullName, phone, currentJobTitle, bio, linkedinUrl, resumeUrl, skills } = body
 
       // Validation
       const errors: ValidationError[] = []
@@ -109,10 +95,7 @@ export async function PUT(request: NextRequest) {
       }
 
       if (errors.length > 0) {
-        return NextResponse.json(
-          { success: false, errors },
-          { status: 400 }
-        )
+        return NextResponse.json({ success: false, errors }, { status: 400 })
       }
 
       // Update user
@@ -153,16 +136,10 @@ export async function PUT(request: NextRequest) {
       })
     } catch (tokenError) {
       console.error('Token verification error:', tokenError)
-      return NextResponse.json(
-        { success: false, message: 'Invalid token' },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
     }
   } catch (error) {
     console.error('Update profile error:', error)
-    return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 })
   }
 }

@@ -3,10 +3,6 @@ import { cookies } from 'next/headers'
 import DashboardClient from './DashboardClient'
 import { User, SubscriptionResponse } from '@/types'
 
-interface DashboardPageProps {
-  searchParams: { [key: string]: string | string[] | undefined }
-}
-
 async function getCurrentUser(): Promise<User | null> {
   try {
     const cookieStore = await cookies()
@@ -98,7 +94,12 @@ async function getSavedJobsCount(): Promise<number> {
   }
 }
 
+interface DashboardPageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const resolvedSearchParams = await searchParams
   const user = await getCurrentUser()
 
   if (!user) {
@@ -115,7 +116,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       user={user}
       subscriptionStatus={subscriptionStatus}
       savedJobsCount={savedJobsCount}
-      searchParams={searchParams}
+      searchParams={resolvedSearchParams}
     />
   )
 }

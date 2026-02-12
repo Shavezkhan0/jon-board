@@ -290,21 +290,21 @@ export async function sendWelcomeEmail(email: string, fullName: string) {
 }
 
 export async function sendSubscriptionConfirmation(
-  email: string, 
-  fullName: string, 
+  email: string,
+  fullName: string,
   plan: string,
-  expiresAt: string
+  expiresAt: string,
 ) {
   const planPrices: Record<string, string> = {
-    monthly: '₹499/month',
+    monthly: '₹1/month',
     quarterly: '₹1,299/quarter',
-    yearly: '₹2,999/year'
+    yearly: '₹2,999/year',
   }
 
   const formattedDate = new Date(expiresAt).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
   })
 
   const html = createEmailTemplate(`
@@ -392,15 +392,15 @@ export async function sendSubscriptionConfirmation(
 }
 
 export async function sendSubscriptionExpiryReminder(
-  email: string, 
-  fullName: string, 
+  email: string,
+  fullName: string,
   daysLeft: number,
-  plan: string
+  plan: string,
 ) {
   const planPrices: Record<string, string> = {
-    monthly: '₹499/month',
+    monthly: '₹1/month',
     quarterly: '₹1,299/quarter',
-    yearly: '₹2,999/year'
+    yearly: '₹2,999/year',
   }
 
   const html = createEmailTemplate(`
@@ -434,7 +434,7 @@ export async function sendSubscriptionExpiryReminder(
           <h4 style="margin: 0 0 15px 0; color: #1f2937;">Available Plans:</h4>
           <div style="display: grid; gap: 15px;">
             <div style="border: 1px solid #e5e7eb; padding: 15px; border-radius: 6px;">
-              <strong>Starter:</strong> ₹499/month<br>
+              <strong>Starter:</strong> ₹1/month<br>
               <small style="color: #6b7280;">50+ job listings, Basic features</small>
             </div>
             <div style="border: 1px solid #4f46e5; padding: 15px; border-radius: 6px; background: #f0f9ff;">

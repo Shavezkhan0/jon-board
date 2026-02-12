@@ -62,6 +62,27 @@ export const Users: CollectionConfig = {
   },
   fields: [
     {
+      name: 'roles',
+      type: 'select',
+      hasMany: true,
+      options: [
+        {
+          label: 'Admin',
+          value: 'admin',
+        },
+        {
+          label: 'User',
+          value: 'user',
+        },
+      ],
+      defaultValue: ['user'],
+      required: true,
+      saveToJWT: true,
+      admin: {
+        description: 'User roles',
+      },
+    },
+    {
       name: 'fullName',
       type: 'text',
       required: true,
@@ -227,10 +248,10 @@ export const Users: CollectionConfig = {
       },
       access: {
         update: ({ req: { user } }) => {
-          return (user as any)?.roles?.includes('admin') || false
+          return user?.roles?.includes('admin') || false
         },
         read: ({ req: { user } }) => {
-          return (user as any)?.roles?.includes('admin') || false
+          return user?.roles?.includes('admin') || false
         },
       },
     },
@@ -238,7 +259,7 @@ export const Users: CollectionConfig = {
   access: {
     create: () => true,
     read: ({ req: { user } }) => {
-      if ((user as any)?.roles?.includes('admin')) return true
+      if (user?.roles?.includes('admin')) return true
       return {
         id: {
           equals: user?.id,
@@ -246,7 +267,7 @@ export const Users: CollectionConfig = {
       }
     },
     update: ({ req: { user } }) => {
-      if ((user as any)?.roles?.includes('admin')) return true
+      if (user?.roles?.includes('admin')) return true
       return {
         id: {
           equals: user?.id,
@@ -254,7 +275,7 @@ export const Users: CollectionConfig = {
       }
     },
     delete: ({ req: { user } }) => {
-      return (user as any)?.roles?.includes('admin') || false
+      return user?.roles?.includes('admin') || false
     },
   },
 }

@@ -1,340 +1,288 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
-import { useToast } from '@/components/ui/Toast'
+import { Menu, X, User, LogOut, LayoutDashboard, Shield, Briefcase, CreditCard } from 'lucide-react'
 
 export default function Navbar() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-  const [isScrolled, setIsScrolled] = useState(false)
-  const { user, isAuthenticated, logout, isLoading } = useAuth()
-  const { toast } = useToast()
+  const [isOpen, setIsOpen] = useState(false)
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const { user, logout } = useAuth()
   const router = useRouter()
-  const pathname = usePathname()
-  const userMenuRef = useRef<HTMLDivElement>(null)
 
-  // Handle scroll effect
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10)
-    }
-
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
-  // Close user menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setIsUserMenuOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || []
+  const isAdmin = user && adminEmails.includes(user.email)
 
   const handleLogout = async () => {
     await logout()
-    toast('Logged out successfully', 'success')
-    setIsUserMenuOpen(false)
-    router.push('/')
+    router.push('/login')
   }
 
   const getInitials = (name: string) => {
     return name
       .split(' ')
-      .map(word => word[0])
+      .map((n) => n[0])
       .join('')
       .toUpperCase()
       .slice(0, 2)
   }
 
-  const isSubscriptionActive = () => {
-    if (!user) return false
-    return (
-      user.subscriptionStatus === 'active' &&
-      user.subscriptionExpiry &&
-      new Date(user.subscriptionExpiry) > new Date()
-    )
-  }
-
-  const isActiveLink = (path: string) => {
-    return pathname === path
-  }
-
-  const navLinks = [
-    { href: '/', label: 'Home' },
-    { href: '/jobs', label: 'Browse Jobs' },
-    { href: '/pricing', label: 'Pricing' },
-  ]
-
-  const userMenuItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-    { href: '/profile', label: 'Profile', icon: '👤' },
-    { href: '/saved-jobs', label: 'My Saved Jobs', icon: '💼' },
-  ]
-
   return (
-    <>
-      {/* Backdrop blur for mobile menu */}
-      {isMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setIsMenuOpen(false)}
-        />
-      )}
-
-      <nav
-        className={`sticky top-0 z-50 transition-all duration-300 ${
-          isScrolled
-            ? 'bg-white/95 backdrop-blur-lg shadow-lg border-b border-slate-200'
-            : 'bg-white border-b border-slate-200'
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center space-x-3 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center transform transition-transform group-hover:scale-105">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A9.001 9.001 0 0112 21a9.001 9.001 0 01-9-9.255A9.001 9.001 0 0112 3a9.001 9.001 0 019 9.255z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
-                </svg>
+    <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          {/* Logo and Desktop Nav */}
+          <div className="flex">
+            <Link href="/" className="flex-shrink-0 flex items-center">
+              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-2">
+                <Briefcase className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">
                 JobBoard Pro
               </span>
             </Link>
 
-            {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-8">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`text-sm font-medium transition-colors duration-200 ${
-                    isActiveLink(link.href)
-                      ? 'text-indigo-600'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
+            <div className="hidden sm:ml-8 sm:flex sm:space-x-8">
+              <Link
+                href="/jobs"
+                className="text-gray-600 hover:text-indigo-600 inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-indigo-600 text-sm font-medium transition-colors"
+              >
+                Find Jobs
+              </Link>
+              <Link
+                href="/subscribe"
+                className="text-gray-600 hover:text-indigo-600 inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-indigo-600 text-sm font-medium transition-colors"
+              >
+                Pricing
+              </Link>
             </div>
+          </div>
 
-            {/* Right Side - Auth/User Menu */}
-            <div className="flex items-center space-x-4">
-              {isLoading ? (
-                <div className="w-8 h-8 rounded-full bg-slate-200 animate-pulse"></div>
-              ) : isAuthenticated && user ? (
-                <div className="relative" ref={userMenuRef}>
-                  {/* User Avatar with subscription indicator */}
-                  <button
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-100 transition-colors duration-200"
-                  >
-                    {/* Subscription indicator */}
-                    {isSubscriptionActive() && (
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          {/* Right Side Actions */}
+          <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
+            {user ? (
+              <div className="relative ml-3">
+                <div className="flex items-center space-x-4">
+                  {isAdmin && (
+                    <Link
+                      href="/admin-panel"
+                      className="text-gray-600 hover:text-indigo-600 p-2 rounded-full hover:bg-gray-50 transition-colors"
+                      title="Admin Panel"
+                    >
+                      <Shield className="w-5 h-5" />
+                    </Link>
+                  )}
+
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowProfileMenu(!showProfileMenu)}
+                      className="flex text-sm border-2 border-transparent rounded-full focus:outline-none focus:border-gray-300 transition-all"
+                    >
+                      {user.profilePhoto &&
+                      typeof user.profilePhoto !== 'string' &&
+                      user.profilePhoto.url ? (
+                        <img
+                          className="h-9 w-9 rounded-full object-cover"
+                          src={user.profilePhoto.url}
+                          alt={user.fullName}
+                        />
+                      ) : (
+                        <div className="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
+                          {getInitials(user.fullName)}
+                        </div>
+                      )}
+                    </button>
+
+                    {/* Profile Dropdown */}
+                    {showProfileMenu && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setShowProfileMenu(false)}
+                        ></div>
+                        <div className="origin-top-right absolute right-0 mt-2 w-56 rounded-xl shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-20 border border-gray-100">
+                          <div className="px-4 py-3 border-b border-gray-50">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {user.fullName}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                          </div>
+
+                          <Link
+                            href="/dashboard"
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            onClick={() => setShowProfileMenu(false)}
+                          >
+                            <LayoutDashboard className="w-4 h-4 mr-3 text-gray-500" />
+                            Dashboard
+                          </Link>
+
+                          <Link
+                            href="/dashboard?tab=profile"
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            onClick={() => setShowProfileMenu(false)}
+                          >
+                            <User className="w-4 h-4 mr-3 text-gray-500" />
+                            Profile
+                          </Link>
+
+                          {isAdmin && (
+                            <Link
+                              href="/admin-panel"
+                              className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              onClick={() => setShowProfileMenu(false)}
+                            >
+                              <Shield className="w-4 h-4 mr-3 text-gray-500" />
+                              Admin Panel
+                            </Link>
+                          )}
+
+                          <button
+                            onClick={() => {
+                              setShowProfileMenu(false)
+                              handleLogout()
+                            }}
+                            className="flex w-full items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-gray-50 mt-1"
+                          >
+                            <LogOut className="w-4 h-4 mr-3" />
+                            Sign out
+                          </button>
+                        </div>
+                      </>
                     )}
-                    
-                    {/* User Avatar */}
-                    {user.profilePhoto ? (
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <Link
+                  href="/login"
+                  className="text-gray-600 hover:text-indigo-600 px-4 py-2 text-sm font-medium transition-colors"
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/login?tab=register"
+                  className="bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow"
+                >
+                  Sign up
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile menu button */}
+          <div className="flex items-center sm:hidden">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+            >
+              <span className="sr-only">Open main menu</span>
+              {isOpen ? (
+                <X className="block h-6 w-6" aria-hidden="true" />
+              ) : (
+                <Menu className="block h-6 w-6" aria-hidden="true" />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile menu */}
+      {isOpen && (
+        <div className="sm:hidden bg-white border-t border-gray-100">
+          <div className="pt-2 pb-3 space-y-1">
+            <Link
+              href="/jobs"
+              className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-indigo-500 hover:text-indigo-700"
+              onClick={() => setIsOpen(false)}
+            >
+              Find Jobs
+            </Link>
+            <Link
+              href="/subscribe"
+              className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-indigo-500 hover:text-indigo-700"
+              onClick={() => setIsOpen(false)}
+            >
+              Pricing
+            </Link>
+          </div>
+
+          <div className="pt-4 pb-4 border-t border-gray-200">
+            {user ? (
+              <>
+                <div className="flex items-center px-4 mb-4">
+                  <div className="flex-shrink-0">
+                    {user.profilePhoto &&
+                    typeof user.profilePhoto !== 'string' &&
+                    user.profilePhoto.url ? (
                       <img
+                        className="h-10 w-10 rounded-full object-cover"
                         src={user.profilePhoto.url}
                         alt={user.fullName}
-                        className="w-8 h-8 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                      <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
                         {getInitials(user.fullName)}
                       </div>
                     )}
-                    
-                    {/* Dropdown Arrow */}
-                    <svg
-                      className={`w-4 h-4 text-slate-600 transition-transform duration-200 ${
-                        isUserMenuOpen ? 'transform rotate-180' : ''
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-
-                  {/* User Dropdown Menu */}
-                  {isUserMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50">
-                      {/* User Info */}
-                      <div className="px-4 py-3 border-b border-slate-200">
-                        <p className="text-sm font-medium text-slate-900">{user.fullName}</p>
-                        <p className="text-xs text-slate-500">{user.email}</p>
-                        {isSubscriptionActive() && (
-                          <div className="flex items-center space-x-1 mt-1">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <span className="text-xs text-green-600 font-medium">Active Subscription</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Menu Items */}
-                      {userMenuItems.map((item) => (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center space-x-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors duration-200"
-                        >
-                          <span>{item.icon}</span>
-                          <span>{item.label}</span>
-                        </Link>
-                      ))}
-
-                      {/* Logout */}
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200"
-                      >
-                        <span>🚪</span>
-                        <span>Logout</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="hidden lg:flex items-center space-x-4">
-                  <Link
-                    href="/login"
-                    className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors duration-200"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    href="/login"
-                    className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors duration-200"
-                  >
-                    Get Started
-                  </Link>
-                </div>
-              )}
-
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="lg:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors duration-200"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  {isMenuOpen ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  )}
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="lg:hidden fixed inset-0 z-50 flex">
-            <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setIsMenuOpen(false)} />
-            <div className="fixed right-0 top-0 h-full w-80 bg-white shadow-xl">
-              <div className="p-4 border-b border-slate-200">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A9.001 9.001 0 0112 21a9.001 9.001 0 01-9-9.255A9.001 9.001 0 0112 3a9.001 9.001 0 019 9.255z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
-                      </svg>
-                    </div>
-                    <span className="text-xl font-bold text-slate-900">JobBoard Pro</span>
                   </div>
-                  <button
-                    onClick={() => setIsMenuOpen(false)}
-                    className="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              {/* Mobile Navigation Links */}
-              <div className="p-4 space-y-2">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setIsMenuOpen(false)}
-                    className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                      isActiveLink(link.href)
-                        ? 'bg-indigo-50 text-indigo-600'
-                        : 'text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-
-                {isAuthenticated && user && userMenuItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors duration-200"
-                  >
-                    <span>{item.icon}</span>
-                    <span>{item.label}</span>
-                  </Link>
-                ))}
-
-                {!isAuthenticated && (
-                  <div className="pt-4 space-y-2 border-t border-slate-200">
-                    <Link
-                      href="/login"
-                      onClick={() => setIsMenuOpen(false)}
-                      className="block px-4 py-3 text-center text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors duration-200"
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      href="/login"
-                      onClick={() => setIsMenuOpen(false)}
-                      className="block px-4 py-3 text-center text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors duration-200"
-                    >
-                      Get Started
-                    </Link>
+                  <div className="ml-3">
+                    <div className="text-base font-medium text-gray-800">{user.fullName}</div>
+                    <div className="text-sm font-medium text-gray-500">{user.email}</div>
                   </div>
-                )}
-
-                {isAuthenticated && (
+                </div>
+                <div className="space-y-1">
+                  <Link
+                    href="/dashboard"
+                    className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-indigo-500 hover:text-indigo-700"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                  {isAdmin && (
+                    <Link
+                      href="/admin-panel"
+                      className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-indigo-500 hover:text-indigo-700"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Admin Panel
+                    </Link>
+                  )}
                   <button
                     onClick={() => {
+                      setIsOpen(false)
                       handleLogout()
-                      setIsMenuOpen(false)
                     }}
-                    className="flex items-center space-x-3 w-full px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                    className="block w-full text-left pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-red-600 hover:bg-red-50 hover:border-red-500"
                   >
-                    <span>🚪</span>
-                    <span>Logout</span>
+                    Sign out
                   </button>
-                )}
+                </div>
+              </>
+            ) : (
+              <div className="space-y-1 px-4">
+                <Link
+                  href="/login"
+                  className="block w-full text-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-indigo-600 bg-indigo-50 hover:bg-indigo-100"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/login?tab=register"
+                  className="block w-full text-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 mt-3"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Sign up
+                </Link>
               </div>
-            </div>
+            )}
           </div>
-        )}
-      </nav>
-    </>
+        </div>
+      )}
+    </nav>
   )
 }

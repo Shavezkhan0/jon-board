@@ -20,9 +20,7 @@ function buildWhereQuery(searchParams: JobsPageProps['searchParams']) {
     isActive: { equals: true },
   }
 
-  // Add date filter for expired jobs
-  where.expiresAt = { greater_than: new Date().toISOString() }
-
+  // Search filter
   if (searchParams.search) {
     where.or = [
       { title: { like: searchParams.search } },
@@ -30,6 +28,18 @@ function buildWhereQuery(searchParams: JobsPageProps['searchParams']) {
       { description: { like: searchParams.search } },
     ]
   }
+
+  // Date filter: Only hide jobs that ARE expired (have expiry date AND it's passed)
+  // This allows jobs with no expiry date to always show
+  where.and = [
+    {
+      or: [
+        { expiresAt: { exists: false } }, // No expiry date
+        { expiresAt: { equals: null } }, // Null expiry
+        { expiresAt: { greater_than: new Date().toISOString() } }, // Not expired yet
+      ],
+    },
+  ]
 
   if (searchParams.category) {
     where.category = { equals: searchParams.category }
@@ -107,7 +117,9 @@ async function fetchJobs(searchParams: JobsPageProps['searchParams']): Promise<J
   }
 }
 
-export default async function JobsPage(props: { searchParams: Promise<JobsPageProps['searchParams']> }) {
+export default async function JobsPage(props: {
+  searchParams: Promise<JobsPageProps['searchParams']>
+}) {
   // Await searchParams per Next.js 15 requirements
   const searchParams = await props.searchParams
 
@@ -130,19 +142,17 @@ export default async function JobsPage(props: { searchParams: Promise<JobsPagePr
   if (user) {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-      const savedJobsResponse = await fetch(
-        `${baseUrl}/api/jobs/saved`,
-        {
-          cache: 'no-store',
-          credentials: 'include',
-        }
-      )
+      const savedJobsResponse = await fetch(`${baseUrl}/api/jobs/saved`, {
+        cache: 'no-store',
+        credentials: 'include',
+      })
 
       if (savedJobsResponse.ok) {
         const savedJobsData = await savedJobsResponse.json()
-        savedJobIds = savedJobsData.savedJobs?.map((saved: any) =>
-          typeof saved.job === 'string' ? saved.job : saved.job.id
-        ) || []
+        savedJobIds =
+          savedJobsData.savedJobs?.map((saved: any) =>
+            typeof saved.job === 'string' ? saved.job : saved.job.id,
+          ) || []
       }
     } catch (error) {
       console.error('Error fetching saved jobs:', error)
@@ -174,7 +184,8 @@ export default async function JobsPage(props: { searchParams: Promise<JobsPagePr
 export async function generateMetadata() {
   return {
     title: 'Browse Jobs - JobBoard Pro',
-    description: 'Find your dream job from thousands of listings. Filter by category, experience level, location, and more.',
+    description:
+      'Find your dream job from thousands of listings. Filter by category, experience level, location, and more.',
     keywords: 'jobs, career, employment, job board, job search, remote jobs, tech jobs',
     openGraph: {
       title: 'Browse Jobs - JobBoard Pro',
