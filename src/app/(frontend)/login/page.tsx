@@ -27,6 +27,13 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error'>('error')
+  const [showVerifyBanner, setShowVerifyBanner] = useState(false)
+  const [unverifiedEmail, setUnverifiedEmail] = useState('')
+  const [resendLoading, setResendLoading] = useState(false)
+  const [resendSuccess, setResendSuccess] = useState(false)
+  const [resendError, setResendError] = useState('')
+  const [registerSuccess, setRegisterSuccess] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState('')
   
   const [formData, setFormData] = useState<FormData>({
     email: '',
@@ -108,18 +115,30 @@ export default function LoginPage() {
             router.push('/dashboard')
           }, 1500)
         } else {
-          setMessage('Account created! Please login with your credentials.')
-          setMessageType('success')
-          setIsLogin(true)
-          setFormData({ email: formData.email, password: '' })
+          if (data.code === 'VERIFY_EMAIL') {
+            setRegisteredEmail(data.email)
+            setRegisterSuccess(true)
+          } else {
+            setMessage('Account created! Please login with your credentials.')
+            setMessageType('success')
+            setIsLogin(true)
+            setFormData({ email: formData.email, password: '' })
+          }
         }
       } else {
-        setMessage(data.message || 'Something went wrong')
-        setMessageType('error')
+        if (data.code === 'EMAIL_NOT_VERIFIED') {
+          setShowVerifyBanner(true)
+          setUnverifiedEmail(data.email || formData.email)
+          setMessage('')
+        } else {
+          setMessage(data.error || data.message || 'Login failed')
+          setMessageType('error')
+          setShowVerifyBanner(false)
+        }
         if (data.errors) {
           const apiErrors: FormErrors = {}
           data.errors.forEach((error: any) => {
-            apiErrors[error.field] = error.message
+            apiErrors[error.field as keyof FormErrors] = error.message
           })
           setErrors(apiErrors)
         }
@@ -139,6 +158,32 @@ export default function LoginPage() {
     // Clear specific error when user starts typing
     if (errors[name as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [name]: undefined }))
+    }
+  }
+
+  const handleResendVerification = async () => {
+    setResendLoading(true)
+    setResendError('')
+    setResendSuccess(false)
+
+    try {
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: unverifiedEmail }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setResendSuccess(true)
+      } else {
+        setResendError(data.error || 'Failed to send')
+      }
+    } catch (error) {
+      setResendError('Network error. Please try again.')
+    } finally {
+      setResendLoading(false)
     }
   }
 
@@ -285,7 +330,126 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email Verification Banner */}
+          {showVerifyBanner && (
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-4">
+              <div className="text-yellow-400 font-semibold text-sm mb-1">
+                📧 Email Not Verified
+              </div>
+              <div className="text-yellow-300/70 text-xs mb-1">
+                Check your inbox for the verification link.
+              </div>
+              <div className="text-yellow-400/60 text-xs mb-2">
+                Sent to: {unverifiedEmail}
+              </div>
+              {resendSuccess && (
+                <div className="text-green-400 text-xs">
+                  ✅ Email sent! Check your inbox.
+                </div>
+              )}
+              {resendError && (
+                <div className="text-red-400 text-xs">
+                  {resendError}
+                </div>
+              )}
+              {!resendSuccess && (
+                <button
+                  onClick={handleResendVerification}
+                  disabled={resendLoading}
+                  className="text-yellow-400 underline text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {resendLoading ? 'Sending...' : 'Resend verification email'}
+                </button>
+              )}
+              <div className="text-slate-500 text-xs mt-2">
+                Also check your spam folder
+              </div>
+            </div>
+          )}
+
+          {/* Register Success Screen */}
+          {registerSuccess && !isLogin && (
+            <div className="text-center py-8">
+              <div className="text-7xl mb-4">📧</div>
+              <h3 className="text-white text-3xl font-bold mb-3">Check Your Email!</h3>
+              <p className="text-slate-400 mt-3">We sent a verification link to:</p>
+              <p className="text-indigo-400 font-semibold text-lg mt-1">{registeredEmail}</p>
+              
+              <div className="border-t border-slate-800 my-6"></div>
+              
+              <div className="text-left space-y-2 max-w-sm mx-auto">
+                <div className="text-slate-300 text-sm py-1">✅ Open your email inbox</div>
+                <div className="text-slate-300 text-sm py-1">✅ Find email from JobBoard Pro</div>
+                <div className="text-slate-300 text-sm py-1">✅ Click "Verify Email" button</div>
+                <div className="text-slate-300 text-sm py-1">✅ Come back and login</div>
+              </div>
+              
+              <div className="border-t border-slate-800 my-6"></div>
+              
+              <div className="text-slate-500 text-sm mt-4">Didn't receive the email?</div>
+              <div className="text-slate-600 text-xs">Check your spam or junk folder</div>
+              
+              <button
+                onClick={() => {
+                  setResendLoading(true)
+                  fetch('/api/auth/resend-verification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: registeredEmail }),
+                  })
+                  .then(res => res.json())
+                  .then(data => {
+                    if (data.success) {
+                      setResendSuccess(true)
+                    } else {
+                      setResendError(data.error)
+                    }
+                  })
+                  .catch(() => setResendError('Failed to resend'))
+                  .finally(() => setResendLoading(false))
+                }}
+                disabled={resendLoading}
+                className="text-indigo-400 underline text-sm mt-3 cursor-pointer disabled:opacity-50"
+              >
+                {resendLoading ? 'Sending...' : 'Resend verification email'}
+              </button>
+              
+              {resendSuccess && (
+                <div className="text-green-400 text-sm mt-2">✅ Email sent!</div>
+              )}
+              {resendError && (
+                <div className="text-red-400 text-sm mt-2">{resendError}</div>
+              )}
+              
+              <div className="border-t border-slate-800 my-6"></div>
+              
+              <div className="text-slate-500 text-sm">
+                Already verified?{' '}
+                <button
+                  onClick={() => {
+                    setRegisterSuccess(false)
+                    setIsLogin(true)
+                  }}
+                  className="text-indigo-400 underline"
+                >
+                  Login here
+                </button>
+              </div>
+              
+              <div className="text-slate-500 text-xs mt-2">
+                Used wrong email?{' '}
+                <button
+                  onClick={() => setRegisterSuccess(false)}
+                  className="text-indigo-400 underline"
+                >
+                  Register again
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!registerSuccess || isLogin ? (
+            <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -443,6 +607,7 @@ export default function LoginPage() {
               </div>
             )}
           </form>
+          ) : null}
         </div>
       </div>
     </div>

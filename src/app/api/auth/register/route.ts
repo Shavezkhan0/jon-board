@@ -46,15 +46,15 @@ export async function POST(request: NextRequest) {
     if (phone) {
       const phoneRegex = /^[6-9]\d{9}$/
       if (!phoneRegex.test(phone)) {
-        errors.push({ field: 'phone', message: 'Please enter a valid 10-digit Indian phone number' })
+        errors.push({
+          field: 'phone',
+          message: 'Please enter a valid 10-digit Indian phone number',
+        })
       }
     }
 
     if (errors.length > 0) {
-      return NextResponse.json(
-        { success: false, errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ success: false, errors }, { status: 400 })
     }
 
     // Initialize Payload
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       if (existingUser.docs.length > 0) {
         return NextResponse.json(
           { success: false, message: 'Email already exists' },
-          { status: 409 }
+          { status: 409 },
         )
       }
     } catch (error) {
@@ -97,26 +97,20 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: 'Registration successful',
-        user: {
-          id: user.id,
-          email: user.email,
-          fullName: user.fullName,
-          subscriptionStatus: user.subscriptionStatus,
-        },
+        code: 'VERIFY_EMAIL',
+        message:
+          'Account created! Please check your email to verify your account before logging in.',
+        email: user.email,
       })
     } catch (error) {
       console.error('Error creating user:', error)
       return NextResponse.json(
         { success: false, message: 'Failed to create user' },
-        { status: 500 }
+        { status: 500 },
       )
     }
   } catch (error) {
     console.error('Registration error:', error)
-    return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 })
   }
 }

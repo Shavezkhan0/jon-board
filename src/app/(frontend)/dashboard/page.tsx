@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import DashboardClient from './DashboardClient'
 import { User, SubscriptionResponse } from '@/types'
 
@@ -8,10 +9,18 @@ interface DashboardPageProps {
 
 async function getCurrentUser(): Promise<User | null> {
   try {
+    const cookieStore = await cookies()
+    const token = cookieStore.get('payload-token')?.value
+
+    if (!token) {
+      return null
+    }
+
     const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/auth/me`, {
       cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
+        Cookie: `payload-token=${token}`,
       },
     })
 
@@ -29,10 +38,14 @@ async function getCurrentUser(): Promise<User | null> {
 
 async function getSubscriptionStatus(): Promise<SubscriptionResponse> {
   try {
+    const cookieStore = await cookies()
+    const token = cookieStore.get('payload-token')?.value
+
     const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/payment/status`, {
       cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { Cookie: `payload-token=${token}` }),
       },
     })
 
@@ -62,10 +75,14 @@ async function getSubscriptionStatus(): Promise<SubscriptionResponse> {
 
 async function getSavedJobsCount(): Promise<number> {
   try {
+    const cookieStore = await cookies()
+    const token = cookieStore.get('payload-token')?.value
+
     const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/jobs/saved`, {
       cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { Cookie: `payload-token=${token}` }),
       },
     })
 

@@ -1,31 +1,33 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import Script from 'next/script'
 import { useRouter } from 'next/navigation'
 import { PLANS, formatPrice, PlanType } from '@/lib/razorpay'
-import { User } from '@/types'
 import { useToast } from '@/components/ui/Toast'
+import { useAuth } from '@/context/AuthContext'
+import ConfirmModal from '@/components/Subscription/ConfirmModal'
+import SuccessScreen from '@/components/Subscription/SuccessScreen'
 
 interface PricingSectionProps {
-  user: User
+  user: any
   isActive: boolean
   subscription: any
 }
 
-declare global {
-  interface Window {
-    Razorpay: any
-  }
-}
-
 export default function PricingSection({ user, isActive, subscription }: PricingSectionProps) {
   const router = useRouter()
-  const { toast } = useToast()
+  const { toast, refreshUser } = useAuth()
   const [loading, setLoading] = useState(false)
   const [showPricing, setShowPricing] = useState(!isActive)
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null)
-  const razorpayLoaded = useRef(false)
+
+  // Test subscription state
+  const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null)
+  const [showModal, setShowModal] = useState(false)
+  const [testLoading, setTestLoading] = useState(false)
+  const [subscriptionData, setSubscriptionData] = useState<any>(null)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [error, setError] = useState('')
 
   const calculateDaysRemaining = (expiryDate: string) => {
     const now = new Date()
@@ -38,138 +40,93 @@ export default function PricingSection({ user, isActive, subscription }: Pricing
     return ((totalDays - daysRemaining) / totalDays) * 100
   }
 
-  const handleSubscribe = async (planId: PlanType) => {
-    if (loading) return
+  const handleSelectPlan = (planId: PlanType) => {
+    setSelectedPlan(planId)
+    setShowModal(true)
+    setError('')
+  }
 
-    setLoading(true)
+  const handleConfirmSubscription = async () => {
+    if (!selectedPlan) return
+
+    setTestLoading(true)
+    setError('')
 
     try {
-      // Step 1: Create order
-      const response = await fetch('/api/payment/create-order', {
+      const res = await fetch('/api/payment/test-subscribe', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ plan: planId }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: selectedPlan }),
       })
 
-      const data = await response.json()
+      const data = await res.json()
 
-      if (!data.success) {
-        throw new Error(data.message || 'Failed to create order')
+      if (!res.ok) {
+        setError(data.error || 'Failed to activate subscription')
+        setTestLoading(false)
+        return
       }
 
-      // Step 2: Load Razorpay if not loaded
-      if (!razorpayLoaded.current || !window.Razorpay) {
-        throw new Error('Payment system is loading. Please try again.')
-      }
+      // Success!
+      setShowModal(false)
+      setSubscriptionData(data.subscription)
+      setShowSuccess(true)
+      setSelectedPlan(null)
 
-      const plan = PLANS[planId]
+      toast('🎉 Subscription Activated!', 'success')
 
-      // Step 3: Open Razorpay checkout
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: data.amount,
-        currency: data.currency,
-        order_id: data.orderId,
-        name: 'JobBoard Pro',
-        description: `${plan.name} Subscription`,
-        image: '/logo.png',
-        handler: async (response: any) => {
-          try {
-            // Step 4: Verify payment
-            const verifyResponse = await fetch('/api/payment/verify', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              credentials: 'include',
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                plan: planId,
-              }),
-            })
+      // Refresh user state immediately
+      await refreshUser()
 
-            const verifyData = await verifyResponse.json()
-
-            if (verifyData.success) {
-              // Step 5: Success handling
-              toast('🎉 Subscription Activated!', 'success')
-              
-              // Redirect to success page with confetti
-              router.push(`/payment/success?plan=${plan.name}&expiresAt=${verifyData.expiresAt}`)
-            } else {
-              throw new Error(verifyData.message || 'Payment verification failed')
-            }
-          } catch (error) {
-            console.error('Payment verification error:', error)
-            toast('Payment verification failed. Please contact support.', 'error')
-          } finally {
-            setLoading(false)
-          }
-        },
-        prefill: {
-          name: user.fullName,
-          email: user.email,
-          contact: user.phone || undefined,
-        },
-        theme: {
-          color: '#6366f1',
-        },
-        modal: {
-          ondismiss: () => {
-            setLoading(false)
-            toast('Payment cancelled', 'info')
-          },
-          escape: true,
-          handleback: true,
-          confirm_close: true,
-          persist: 'nomal',
-        },
-        notes: {
-          user_id: user.id,
-          plan_type: planId,
-        },
-      }
-
-      const razorpay = new window.Razorpay(options)
-      razorpay.open()
-    } catch (error) {
-      console.error('Subscription error:', error)
-      toast(error instanceof Error ? error.message : 'Something went wrong', 'error')
-      setLoading(false)
+      // Redirect to dashboard after 3 seconds
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 3000)
+    } catch (err) {
+      console.error('Test subscription error:', err)
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setTestLoading(false)
     }
+  }
+
+  const handleCancelModal = () => {
+    setShowModal(false)
+    setSelectedPlan(null)
+    setTestLoading(false)
   }
 
   const faqs = [
     {
       question: 'Can I cancel anytime?',
-      answer: 'Yes, you can cancel your subscription anytime. Your access will continue until the end of your current billing period.'
+      answer:
+        'Yes, you can cancel your subscription anytime. Your access will continue until the end of your current billing period.',
     },
     {
-      question: 'What payment methods are accepted?',
-      answer: 'We accept UPI, Visa, Mastercard, Rupay, Net Banking, and various digital wallets through Razorpay\'s secure payment gateway.'
+      question: 'What happens when I activate a test subscription?',
+      answer:
+        'You get full access to all premium features immediately. No actual payment is processed - this is for testing purposes only.',
     },
     {
-      question: 'Will I get a reminder before expiry?',
-      answer: 'Yes! You\'ll receive email reminders 7 days before your subscription expires so you can renew without interruption.'
-    },
-    {
-      question: 'Is my payment secure?',
-      answer: 'Absolutely! All payments are processed through Razorpay, which is PCI DSS compliant and uses industry-standard encryption.'
+      question: 'How long does the test subscription last?',
+      answer:
+        'Test subscriptions last for the full duration of your selected plan (30 days for Monthly, 90 days for Quarterly, 365 days for Yearly).',
     },
     {
       question: 'Can I change my plan later?',
-      answer: 'Yes! You can upgrade or downgrade your plan at any time. The new plan will take effect after your current billing period ends.'
+      answer:
+        'Yes! You can upgrade or downgrade your plan at any time. The new plan will take effect after your current billing period ends.',
     },
     {
       question: 'What happens to my saved jobs if I cancel?',
-      answer: 'Your saved jobs remain in your account. If you reactivate your subscription later, you\'ll regain access to all your saved positions.'
+      answer:
+        "Your saved jobs remain in your account. If you reactivate your subscription later, you'll regain access to all your saved positions.",
     },
   ]
+
+  if (showSuccess && subscriptionData) {
+    return <SuccessScreen subscription={subscriptionData} onClose={() => setShowSuccess(false)} />
+  }
 
   if (isActive && subscription && !showPricing) {
     const daysRemaining = calculateDaysRemaining(subscription.expiresAt)
@@ -182,8 +139,18 @@ export default function PricingSection({ user, isActive, subscription }: Pricing
           {/* Header */}
           <div className="text-center mb-12">
             <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-10 h-10 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             </div>
             <h1 className="text-4xl font-bold text-slate-900 mb-4">Active Subscription</h1>
@@ -201,25 +168,19 @@ export default function PricingSection({ user, isActive, subscription }: Pricing
                   {formatPrice(plan.amount)}/{plan.name.toLowerCase().slice(0, -2)}
                 </h2>
                 <p className="text-slate-600">
-                  Expires on {new Date(subscription.expiresAt).toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
+                  Expires on{' '}
+                  {new Date(subscription.expiresAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
                   })}
                 </p>
               </div>
-              
+
               <div className="mt-6 sm:mt-0">
                 <div className="relative w-32 h-32">
                   <svg className="w-32 h-32 transform -rotate-90">
-                    <circle
-                      cx="64"
-                      cy="64"
-                      r="56"
-                      stroke="#e5e7eb"
-                      strokeWidth="12"
-                      fill="none"
-                    />
+                    <circle cx="64" cy="64" r="56" stroke="#e5e7eb" strokeWidth="12" fill="none" />
                     <circle
                       cx="64"
                       cy="64"
@@ -271,8 +232,18 @@ export default function PricingSection({ user, isActive, subscription }: Pricing
                 'Profile management',
               ].map((feature, index) => (
                 <div key={index} className="flex items-center">
-                  <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-5 h-5 text-green-500 mr-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                   <span className="text-slate-700">{feature}</span>
                 </div>
@@ -286,22 +257,22 @@ export default function PricingSection({ user, isActive, subscription }: Pricing
 
   return (
     <>
-      <Script
-        src="https://checkout.razorpay.com/v1/checkout.js"
-        strategy="lazyOnload"
-        onLoad={() => {
-          razorpayLoaded.current = true
-        }}
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showModal}
+        plan={selectedPlan}
+        planDetails={selectedPlan ? PLANS[selectedPlan] : null}
+        onConfirm={handleConfirmSubscription}
+        onCancel={handleCancelModal}
+        isLoading={testLoading}
       />
-      
+
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900">
         {/* Header */}
         <div className="text-center py-12 px-4">
-          <h1 className="text-5xl font-bold text-white mb-4">
-            Unlock Your Career Potential
-          </h1>
+          <h1 className="text-5xl font-bold text-white mb-4">Choose Your Perfect Plan</h1>
           <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-            Choose the perfect plan to access unlimited job listings, advanced features, and land your dream job faster.
+            Unlock unlimited job searches and premium features to land your dream job faster.
           </p>
         </div>
 
@@ -320,63 +291,42 @@ export default function PricingSection({ user, isActive, subscription }: Pricing
                     {formatPrice(PLANS.monthly.amount)}
                   </div>
                   <p className="text-slate-400">per month</p>
+                  <p className="text-slate-500 text-sm mt-1">30 days access</p>
                 </div>
-                
+
                 <ul className="space-y-3 mb-8">
-                  <li className="flex items-start">
-                    <svg className="w-5 h-5 text-indigo-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-slate-300">Access to all job listings</span>
-                  </li>
-                  <li className="flex items-start">
-                    <svg className="w-5 h-5 text-indigo-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-slate-300">Advanced search & filters</span>
-                  </li>
-                  <li className="flex items-start">
-                    <svg className="w-5 h-5 text-indigo-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-slate-300">Save unlimited jobs</span>
-                  </li>
-                  <li className="flex items-start">
-                    <svg className="w-5 h-5 text-indigo-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-slate-300">Email job alerts</span>
-                  </li>
-                  <li className="flex items-start">
-                    <svg className="w-5 h-5 text-indigo-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-slate-300">Direct apply links</span>
-                  </li>
-                  <li className="flex items-start">
-                    <svg className="w-5 h-5 text-indigo-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-slate-300">Profile management</span>
-                  </li>
-                </ul>
-                
-                <button
-                  onClick={() => handleSubscribe('monthly')}
-                  disabled={loading}
-                  className="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  {[
+                    'All job listings access',
+                    'Advanced filters',
+                    'Save unlimited jobs',
+                    'Direct apply links',
+                    'Email job alerts',
+                  ].map((feature, index) => (
+                    <li key={index} className="flex items-start">
+                      <svg
+                        className="w-5 h-5 text-indigo-400 mr-3 mt-0.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
                       </svg>
-                      Processing...
-                    </span>
-                  ) : (
-                    'Subscribe Now'
-                  )}
+                      <span className="text-slate-300">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  onClick={() => handleSelectPlan('monthly')}
+                  disabled={loading}
+                  className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 px-4 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Get Started →
                 </button>
               </div>
             </div>
@@ -388,7 +338,7 @@ export default function PricingSection({ user, isActive, subscription }: Pricing
                   ⭐ Most Popular
                 </span>
               </div>
-              <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-2xl border border-indigo-500 p-8 hover:transform hover:scale-105 transition-all duration-300 shadow-2xl">
+              <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-2xl border border-indigo-500 ring-2 ring-indigo-500 p-8 hover:transform hover:scale-105 transition-all duration-300 shadow-2xl">
                 <div className="text-center mb-8">
                   <h3 className="text-2xl font-bold text-white mb-2">Quarterly</h3>
                   <div className="text-4xl font-bold text-white mb-2">
@@ -401,45 +351,40 @@ export default function PricingSection({ user, isActive, subscription }: Pricing
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-500 text-white mt-3">
                     Save 13%
                   </span>
+                  <p className="text-slate-400">90 days access</p>
                 </div>
-                
+
                 <ul className="space-y-3 mb-8">
-                  <li className="flex items-start">
-                    <svg className="w-5 h-5 text-green-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-white">Everything in Monthly</span>
-                  </li>
-                  <li className="flex items-start">
-                    <svg className="w-5 h-5 text-green-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-white">Priority job alerts</span>
-                  </li>
-                  <li className="flex items-start">
-                    <svg className="w-5 h-5 text-green-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-white">Advanced profile visibility</span>
-                  </li>
-                </ul>
-                
-                <button
-                  onClick={() => handleSubscribe('quarterly')}
-                  disabled={loading}
-                  className="w-full bg-white text-indigo-600 py-3 px-6 rounded-lg font-medium hover:bg-slate-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-bold"
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  {[
+                    'Everything in Monthly',
+                    'Priority job alerts',
+                    'Advanced profile visibility',
+                  ].map((feature, index) => (
+                    <li key={index} className="flex items-start">
+                      <svg
+                        className="w-5 h-5 text-green-400 mr-3 mt-0.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
                       </svg>
-                      Processing...
-                    </span>
-                  ) : (
-                    'Subscribe Now'
-                  )}
+                      <span className="text-white">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  onClick={() => handleSelectPlan('quarterly')}
+                  disabled={loading}
+                  className="w-full bg-white text-indigo-600 py-3 px-4 rounded-xl font-bold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100"
+                >
+                  Get Started →
                 </button>
               </div>
             </div>
@@ -462,98 +407,65 @@ export default function PricingSection({ user, isActive, subscription }: Pricing
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-500 text-white mt-3">
                     Save 33%
                   </span>
+                  <p className="text-slate-400">365 days access</p>
                 </div>
-                
+
                 <ul className="space-y-3 mb-8">
-                  <li className="flex items-start">
-                    <svg className="w-5 h-5 text-purple-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-slate-300">Everything in Quarterly</span>
-                  </li>
-                  <li className="flex items-start">
-                    <svg className="w-5 h-5 text-purple-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-slate-300">Priority email support</span>
-                  </li>
-                  <li className="flex items-start">
-                    <svg className="w-5 h-5 text-purple-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-slate-300">Resume review credits</span>
-                  </li>
-                </ul>
-                
-                <button
-                  onClick={() => handleSubscribe('yearly')}
-                  disabled={loading}
-                  className="w-full bg-purple-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-bold"
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  {[
+                    'Everything in Quarterly',
+                    'Priority email support',
+                    'Resume review credits',
+                  ].map((feature, index) => (
+                    <li key={index} className="flex items-start">
+                      <svg
+                        className="w-5 h-5 text-purple-400 mr-3 mt-0.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
                       </svg>
-                      Processing...
-                    </span>
-                  ) : (
-                    'Subscribe Now'
-                  )}
+                      <span className="text-slate-300">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  onClick={() => handleSelectPlan('yearly')}
+                  disabled={loading}
+                  className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 px-4 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Get Started →
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Trust Badges */}
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center justify-center space-x-2 bg-slate-800 rounded-lg px-6 py-4 border border-slate-700">
-              <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              <span className="text-white font-medium">Secure Payment by Razorpay</span>
-              <div className="flex items-center space-x-3 ml-4">
-                <span className="text-2xl text-white">💳</span>
-                <span className="text-2xl text-white">📱</span>
-                <span className="text-2xl text-white">🏦</span>
+          {/* Error Display */}
+          {error && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+              <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 text-center">
+                <p className="text-red-400 font-medium">{error}</p>
               </div>
             </div>
-            <p className="text-slate-400 text-sm mt-3">
-              Accepts UPI, Visa, Mastercard, Rupay, Net Banking & more
-            </p>
-          </div>
+          )}
 
-          {/* FAQs */}
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold text-white text-center mb-8">Frequently Asked Questions</h2>
-            <div className="space-y-4">
-              {faqs.map((faq, index) => (
-                <div key={index} className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-                  <button
-                    onClick={() => setExpandedFAQ(expandedFAQ === index ? null : index)}
-                    className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-slate-700 transition-colors duration-200"
-                  >
-                    <span className="text-white font-medium">{faq.question}</span>
-                    <svg
-                      className={`w-5 h-5 text-slate-400 transform transition-transform duration-200 ${
-                        expandedFAQ === index ? 'rotate-180' : ''
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  {expandedFAQ === index && (
-                    <div className="px-6 py-4 border-t border-slate-700">
-                      <p className="text-slate-300">{faq.answer}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
+          {/* Test Mode Notice */}
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center justify-center space-x-2 bg-slate-800 rounded-lg px-6 py-4 border border-slate-700">
+              <span className="text-yellow-500 font-medium">
+                🧪 Test Mode — No payment required
+              </span>
             </div>
+            <p className="text-slate-500 text-xs mt-4">
+              All subscriptions are activated instantly without payment processing for testing
+              purposes.
+            </p>
           </div>
         </div>
       </div>

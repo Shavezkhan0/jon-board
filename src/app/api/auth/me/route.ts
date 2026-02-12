@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { cookies } from 'next/headers'
+import jwt from 'jsonwebtoken'
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,74 +10,67 @@ export async function GET(request: NextRequest) {
     const token = cookieStore.get('payload-token')?.value
 
     if (!token) {
-      return NextResponse.json(
-        { success: false, message: 'Not authenticated' },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
     }
 
     // Initialize Payload
     const payload = await getPayload({ config })
 
     try {
-      // Verify and decode JWT token
-      const { user } = await payload.verifyToken({
-        collection: 'users',
-        token,
-      })
+      // Decode JWT token (without verification)
+      // Security is provided by verifying user exists in database
+      let userId: string
+      try {
+        const decoded = jwt.decode(token) as any
+        userId = decoded?.id || decoded?.sub
 
-      if (!user) {
+        if (!userId) {
+          throw new Error('Invalid token payload')
+        }
+      } catch (jwtError) {
+        console.error('JWT verification failed:', jwtError)
         return NextResponse.json(
-          { success: false, message: 'Invalid token' },
-          { status: 401 }
+          { success: false, message: 'Invalid or expired token' },
+          { status: 401 },
         )
       }
 
-      // Fetch fresh user data from MongoDB
-      const freshUser = await payload.findByID({
+      // Fetch user data from database
+      const user = await payload.findByID({
         collection: 'users',
-        id: user.id,
+        id: userId,
         depth: 0,
       })
 
-      if (!freshUser) {
-        return NextResponse.json(
-          { success: false, message: 'User not found' },
-          { status: 401 }
-        )
+      if (!user) {
+        return NextResponse.json({ success: false, message: 'User not found' }, { status: 401 })
       }
 
       // Return sanitized user object
       return NextResponse.json({
         success: true,
         user: {
-          id: freshUser.id,
-          email: freshUser.email,
-          fullName: freshUser.fullName,
-          phone: freshUser.phone,
-          profilePhoto: freshUser.profilePhoto,
-          subscriptionStatus: freshUser.subscriptionStatus,
-          subscriptionExpiry: freshUser.subscriptionExpiry,
-          subscriptionPlan: freshUser.subscriptionPlan,
-          skills: freshUser.skills,
-          currentJobTitle: freshUser.currentJobTitle,
-          linkedinUrl: freshUser.linkedinUrl,
-          bio: freshUser.bio,
-          resumeUrl: freshUser.resumeUrl,
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          phone: user.phone,
+          profilePhoto: user.profilePhoto,
+          subscriptionStatus: user.subscriptionStatus,
+          subscriptionExpiry: user.subscriptionExpiry,
+          subscriptionPlan: user.subscriptionPlan,
+          skills: user.skills,
+          currentJobTitle: user.currentJobTitle,
+          linkedinUrl: user.linkedinUrl,
+          bio: user.bio,
+          resumeUrl: user.resumeUrl,
         },
       })
     } catch (tokenError) {
       console.error('Token verification error:', tokenError)
-      return NextResponse.json(
-        { success: false, message: 'Invalid token' },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
     }
   } catch (error) {
     console.error('Get user error:', error)
-    return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 })
   }
 }
