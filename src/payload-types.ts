@@ -69,6 +69,9 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    jobs: Job;
+    subscriptions: Subscription;
+    'saved-jobs': SavedJob;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -78,6 +81,9 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    jobs: JobsSelect<false> | JobsSelect<true>;
+    subscriptions: SubscriptionsSelect<false> | SubscriptionsSelect<true>;
+    'saved-jobs': SavedJobsSelect<false> | SavedJobsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -120,6 +126,61 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: string;
+  /**
+   * User's full name
+   */
+  fullName: string;
+  /**
+   * 10-digit Indian phone number without country code
+   */
+  phone?: string | null;
+  /**
+   * User profile photo
+   */
+  profilePhoto?: (string | null) | Media;
+  /**
+   * URL to user's resume
+   */
+  resumeUrl?: string | null;
+  /**
+   * List of user skills
+   */
+  skills?:
+    | {
+        skill: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Current job title
+   */
+  currentJobTitle?: string | null;
+  /**
+   * LinkedIn profile URL
+   */
+  linkedinUrl?: string | null;
+  /**
+   * Brief bio (max 300 characters)
+   */
+  bio?: string | null;
+  /**
+   * Current subscription status
+   */
+  subscriptionStatus?: ('none' | 'active' | 'expired' | 'cancelled') | null;
+  /**
+   * Subscription expiry date
+   */
+  subscriptionExpiry?: string | null;
+  /**
+   * Current subscription plan
+   */
+  subscriptionPlan?: ('monthly' | 'quarterly' | 'yearly') | null;
+  razorpayOrderId?: string | null;
+  razorpayPaymentId?: string | null;
+  /**
+   * Total amount paid by user (in paise)
+   */
+  totalPaid?: number | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -127,6 +188,8 @@ export interface User {
   resetPasswordExpiration?: string | null;
   salt?: string | null;
   hash?: string | null;
+  _verified?: boolean | null;
+  _verificationToken?: string | null;
   loginAttempts?: number | null;
   lockUntil?: string | null;
   sessions?:
@@ -145,6 +208,9 @@ export interface User {
  */
 export interface Media {
   id: string;
+  /**
+   * Alternative text for accessibility
+   */
   alt: string;
   updatedAt: string;
   createdAt: string;
@@ -157,6 +223,289 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    feature?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "jobs".
+ */
+export interface Job {
+  id: string;
+  /**
+   * Job title (5-100 characters)
+   */
+  title: string;
+  /**
+   * Auto-generated from title
+   */
+  slug?: string | null;
+  /**
+   * Company name
+   */
+  company: string;
+  /**
+   * Company logo
+   */
+  companyLogo?: (string | null) | Media;
+  /**
+   * Company website URL
+   */
+  companyWebsite?: string | null;
+  /**
+   * Job location (e.g. "Mumbai, Maharashtra")
+   */
+  location: string;
+  /**
+   * Is this a remote position?
+   */
+  isRemote?: boolean | null;
+  /**
+   * Type of employment
+   */
+  jobType: 'full-time' | 'part-time' | 'remote' | 'freelance' | 'internship' | 'contract';
+  /**
+   * Job category
+   */
+  category:
+    | 'technology'
+    | 'marketing'
+    | 'design'
+    | 'finance'
+    | 'sales'
+    | 'healthcare'
+    | 'education'
+    | 'legal'
+    | 'operations'
+    | 'other';
+  /**
+   * Required experience level
+   */
+  experienceLevel: 'fresher' | 'junior' | 'mid-level' | 'senior' | 'lead' | 'manager';
+  /**
+   * Minimum salary (optional)
+   */
+  salaryMin?: number | null;
+  /**
+   * Maximum salary (optional)
+   */
+  salaryMax?: number | null;
+  /**
+   * Salary currency
+   */
+  salaryCurrency?: ('INR' | 'USD') | null;
+  /**
+   * Job description
+   */
+  description: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * Job requirements
+   */
+  requirements: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * Nice to have skills/qualifications (optional)
+   */
+  niceToHave?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Application link or email
+   */
+  applyLink: string;
+  /**
+   * Application email (optional)
+   */
+  applyEmail?: string | null;
+  /**
+   * Required skills (max 15)
+   */
+  skills?:
+    | {
+        skill: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Job benefits
+   */
+  benefits?:
+    | {
+        benefit: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Is this job active?
+   */
+  isActive?: boolean | null;
+  /**
+   * Feature this job?
+   */
+  isFeatured?: boolean | null;
+  /**
+   * Mark as urgent?
+   */
+  isUrgent?: boolean | null;
+  /**
+   * Number of views
+   */
+  viewCount?: number | null;
+  /**
+   * Number of applications
+   */
+  applicationCount?: number | null;
+  /**
+   * Job expiry date
+   */
+  expiresAt: string;
+  /**
+   * Date when job was posted
+   */
+  postedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscriptions".
+ */
+export interface Subscription {
+  id: string;
+  /**
+   * User who owns this subscription
+   */
+  user: string | User;
+  /**
+   * User email for reference
+   */
+  userEmail: string;
+  /**
+   * Subscription plan
+   */
+  plan: 'monthly' | 'quarterly' | 'yearly';
+  /**
+   * Subscription status
+   */
+  status?: ('pending' | 'active' | 'expired' | 'cancelled') | null;
+  /**
+   * Razorpay order ID
+   */
+  razorpayOrderId: string;
+  /**
+   * Razorpay payment ID (populated after successful payment)
+   */
+  razorpayPaymentId?: string | null;
+  /**
+   * Razorpay signature for webhook verification
+   */
+  razorpaySignature?: string | null;
+  /**
+   * Amount paid (in paise)
+   */
+  amount: number;
+  /**
+   * Currency code
+   */
+  currency?: string | null;
+  /**
+   * Subscription start date
+   */
+  startedAt?: string | null;
+  /**
+   * Subscription expiry date
+   */
+  expiresAt: string;
+  /**
+   * Payment verified via webhook
+   */
+  isVerified?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "saved-jobs".
+ */
+export interface SavedJob {
+  id: string;
+  /**
+   * User who saved this job
+   */
+  user: string | User;
+  /**
+   * Job that was saved
+   */
+  job: string | Job;
+  /**
+   * Date when job was saved
+   */
+  savedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -189,6 +538,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media';
         value: string | Media;
+      } | null)
+    | ({
+        relationTo: 'jobs';
+        value: string | Job;
+      } | null)
+    | ({
+        relationTo: 'subscriptions';
+        value: string | Subscription;
+      } | null)
+    | ({
+        relationTo: 'saved-jobs';
+        value: string | SavedJob;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -237,6 +598,25 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  fullName?: T;
+  phone?: T;
+  profilePhoto?: T;
+  resumeUrl?: T;
+  skills?:
+    | T
+    | {
+        skill?: T;
+        id?: T;
+      };
+  currentJobTitle?: T;
+  linkedinUrl?: T;
+  bio?: T;
+  subscriptionStatus?: T;
+  subscriptionExpiry?: T;
+  subscriptionPlan?: T;
+  razorpayOrderId?: T;
+  razorpayPaymentId?: T;
+  totalPaid?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -244,6 +624,8 @@ export interface UsersSelect<T extends boolean = true> {
   resetPasswordExpiration?: T;
   salt?: T;
   hash?: T;
+  _verified?: T;
+  _verificationToken?: T;
   loginAttempts?: T;
   lockUntil?: T;
   sessions?:
@@ -271,6 +653,116 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumbnail?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        card?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        feature?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "jobs_select".
+ */
+export interface JobsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  company?: T;
+  companyLogo?: T;
+  companyWebsite?: T;
+  location?: T;
+  isRemote?: T;
+  jobType?: T;
+  category?: T;
+  experienceLevel?: T;
+  salaryMin?: T;
+  salaryMax?: T;
+  salaryCurrency?: T;
+  description?: T;
+  requirements?: T;
+  niceToHave?: T;
+  applyLink?: T;
+  applyEmail?: T;
+  skills?:
+    | T
+    | {
+        skill?: T;
+        id?: T;
+      };
+  benefits?:
+    | T
+    | {
+        benefit?: T;
+        id?: T;
+      };
+  isActive?: T;
+  isFeatured?: T;
+  isUrgent?: T;
+  viewCount?: T;
+  applicationCount?: T;
+  expiresAt?: T;
+  postedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscriptions_select".
+ */
+export interface SubscriptionsSelect<T extends boolean = true> {
+  user?: T;
+  userEmail?: T;
+  plan?: T;
+  status?: T;
+  razorpayOrderId?: T;
+  razorpayPaymentId?: T;
+  razorpaySignature?: T;
+  amount?: T;
+  currency?: T;
+  startedAt?: T;
+  expiresAt?: T;
+  isVerified?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "saved-jobs_select".
+ */
+export interface SavedJobsSelect<T extends boolean = true> {
+  user?: T;
+  job?: T;
+  savedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

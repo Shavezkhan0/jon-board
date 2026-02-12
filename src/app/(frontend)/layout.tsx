@@ -1,18 +1,26 @@
 import React from 'react'
-import './styles.css'
+import { AuthProvider } from '@/context/AuthContext'
+import { ToastProvider } from '@/components/ui/Toast'
+import Navbar from '@/components/Navbar'
+import '../globals.css'
 
 export const metadata = {
-  description: 'A blank template using Payload in a Next.js app.',
-  title: 'Payload Blank Template',
+  description: 'Find your dream job with JobBoard Pro - The best job board for professionals',
+  title: 'JobBoard Pro - Find Your Dream Job',
 }
 
-export default async function RootLayout(props: { children: React.ReactNode }) {
+export default function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
 
   return (
     <html lang="en">
-      <body>
-        <main>{children}</main>
+      <body className="min-h-screen">
+        <AuthProvider>
+          <ToastProvider>
+            <Navbar />
+            <main className="min-h-screen">{children}</main>
+          </ToastProvider>
+        </AuthProvider>
       </body>
     </html>
   )
