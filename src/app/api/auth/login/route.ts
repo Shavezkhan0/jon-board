@@ -9,7 +9,11 @@ interface LoginRequest {
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(7)}`
+
   try {
+    console.log(`[${requestId}] Login attempt started`)
+
     const body: LoginRequest = await request.json()
     const { email, password } = body
 
@@ -99,16 +103,18 @@ export async function POST(request: NextRequest) {
         path: '/',
       })
 
+      console.log(`[${requestId}] Login successful for: ${email}`)
+
       return response
-    } catch (error) {
-      console.error('Login error:', error)
+    } catch (error: any) {
+      console.error(`[${requestId}] Login error:`, error?.message || error)
       return NextResponse.json(
         { success: false, message: 'Invalid email or password' },
         { status: 401 },
       )
     }
-  } catch (error) {
-    console.error('Login API error:', error)
+  } catch (error: any) {
+    console.error(`[${requestId}] Login API error:`, error?.message || error)
     return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 })
   }
 }

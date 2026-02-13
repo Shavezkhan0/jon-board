@@ -67,7 +67,7 @@ export default function Navbar() {
                 <div className="flex items-center space-x-4">
                   {isAdmin && (
                     <Link
-                      href="/admin-panel"
+                      href="/admin"
                       className="text-gray-600 hover:text-indigo-600 p-2 rounded-full hover:bg-gray-50 transition-colors"
                       title="Admin Panel"
                     >
@@ -130,7 +130,7 @@ export default function Navbar() {
 
                           {isAdmin && (
                             <Link
-                              href="/admin-panel"
+                              href="/admin"
                               className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                               onClick={() => setShowProfileMenu(false)}
                             >
@@ -244,7 +244,7 @@ export default function Navbar() {
                   </Link>
                   {isAdmin && (
                     <Link
-                      href="/admin-panel"
+                      href="/admin"
                       className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-indigo-500 hover:text-indigo-700"
                       onClick={() => setIsOpen(false)}
                     >

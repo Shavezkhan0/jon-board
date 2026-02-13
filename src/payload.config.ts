@@ -18,11 +18,35 @@ import UserNotifications from './collections/UserNotifications'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
+const getServerUrl = () => {
+  const url = process.env.NEXT_PUBLIC_APP_URL
+  if (!url) {
+    throw new Error('NEXT_PUBLIC_APP_URL environment variable is not set')
+  }
+  return url
+}
+
+const getCorsOrigins = (): string[] => {
+  const serverUrl = getServerUrl()
+  const origins: string[] = [serverUrl]
+
+  if (process.env.NODE_ENV !== 'production') {
+    origins.push('http://localhost:3000', 'http://localhost:3001')
+  } else {
+    origins.push('*')
+  }
+
+  return origins
+}
+
 export default buildConfig({
   admin: {
     user: 'users',
     importMap: {
       baseDir: path.resolve(dirname),
+    },
+    meta: {
+      titleSuffix: '- JobBoard Pro',
     },
   },
   collections: [Users, Media, Jobs, Subscriptions, SavedJobs, Notifications, UserNotifications],
@@ -33,9 +57,15 @@ export default buildConfig({
   },
   db: mongooseAdapter({
     url: process.env.DATABASE_URI || '',
+    connectOptions: {
+      maxPoolSize: 10,
+      minPoolSize: 0,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    },
   }),
-  serverURL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-  cors: [process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000', 'http://localhost:3000'],
+  serverURL: getServerUrl(),
+  cors: getCorsOrigins(),
   email: nodemailerAdapter({
     defaultFromAddress: process.env.EMAIL_FROM || 'onboarding@resend.dev',
     defaultFromName: process.env.EMAIL_FROM_NAME || 'JobBoard Pro',

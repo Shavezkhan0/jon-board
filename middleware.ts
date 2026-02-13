@@ -1,21 +1,27 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import payloadConfig from './src/payload.config'
 
 // Protected routes that require authentication
 const protectedRoutes = ['/dashboard', '/jobs', '/profile', '/subscribe']
 // Public routes that authenticated users should be redirected away from
 const publicRoutes = ['/login', '/register']
 
+// Paths that should bypass middleware processing entirely
+const bypassPaths = ['/api/', '/admin', '/_next/', '/_vercel/', '/favicon.ico', '/_static']
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // Skip middleware for bypass paths
+  if (bypassPaths.some((path) => pathname.startsWith(path))) {
+    return NextResponse.next()
+  }
 
   // Check if the current path is protected
   const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route))
 
   // Check if the current path is public (should redirect authenticated users)
-  const isPublicRoute = publicRoutes.some((route) => pathname === route)
+  const isPublicRoute = publicRoutes.includes(pathname)
 
   // Get the authentication token from cookies
   const token = request.cookies.get('payload-token')?.value
@@ -23,27 +29,16 @@ export async function middleware(request: NextRequest) {
   // If accessing protected route without token, redirect to login
   if (isProtectedRoute && !token) {
     const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
   // If authenticated user tries to access public routes, redirect to dashboard
   if (isPublicRoute && token) {
-    try {
-      // Verify the token
-      const payload = await getPayload({ config: payloadConfig })
-      const { user } = await (payload as any).verifyToken({
-        collection: 'users',
-        token,
-      })
-
-      if (user) {
-        const dashboardUrl = new URL('/dashboard', request.url)
-        return NextResponse.redirect(dashboardUrl)
-      }
-    } catch (error) {
-      // Token is invalid, continue to the public route
-      console.error('Token verification failed:', error)
-    }
+    // Skip server-side verification in middleware - rely on client-side redirect
+    // This prevents cold start issues in serverless
+    const dashboardUrl = new URL('/dashboard', request.url)
+    return NextResponse.redirect(dashboardUrl)
   }
 
   // Continue with the request
