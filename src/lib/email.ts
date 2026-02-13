@@ -14,7 +14,9 @@ function getResendClient() {
   return resendClient
 }
 
-const FROM_EMAIL = 'JobBoard Pro <noreply@jobboardpro.com>'
+const FROM_EMAIL = process.env.EMAIL_FROM
+  ? `${process.env.EMAIL_FROM_NAME || 'JobBoard Pro'} <${process.env.EMAIL_FROM}>`
+  : 'JobBoard Pro <onboarding@resend.dev>'
 
 interface EmailOptions {
   to: string[]
