@@ -36,16 +36,12 @@ export const SavedJobs: CollectionConfig = {
     },
   ],
   access: {
-    read: ({ req: { user } }) => {
-      if (user?.roles?.includes('admin')) return true
-      return {
-        user: {
-          equals: user?.id,
-        },
-      }
-    },
     create: ({ req: { user } }) => {
-      if (user?.roles?.includes('admin')) return true
+      // Users can only create saved jobs for themselves
+      return !!user
+    },
+    read: ({ req: { user } }) => {
+      if ((user as any)?.roles?.includes('admin')) return true
       return {
         user: {
           equals: user?.id,
@@ -53,15 +49,10 @@ export const SavedJobs: CollectionConfig = {
       }
     },
     update: ({ req: { user } }) => {
-      if (user?.roles?.includes('admin')) return true
-      return {
-        user: {
-          equals: user?.id,
-        },
-      }
+      return (user as any)?.roles?.includes('admin') || false
     },
     delete: ({ req: { user } }) => {
-      if (user?.roles?.includes('admin')) return true
+      if ((user as any)?.roles?.includes('admin')) return true
       return {
         user: {
           equals: user?.id,

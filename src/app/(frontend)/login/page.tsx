@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useAuth } from '@/context/AuthContext'
 
 interface FormData {
   fullName?: string
@@ -27,7 +28,14 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error'>('error')
-  
+  const [showVerifyBanner, setShowVerifyBanner] = useState(false)
+  const [unverifiedEmail, setUnverifiedEmail] = useState('')
+  const [resendLoading, setResendLoading] = useState(false)
+  const [resendSuccess, setResendSuccess] = useState(false)
+  const [resendError, setResendError] = useState('')
+  const [registerSuccess, setRegisterSuccess] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState('')
+
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
@@ -35,7 +43,14 @@ export default function LoginPage() {
 
   const [errors, setErrors] = useState<FormErrors>({})
 
+  const { user } = useAuth()
   const router = useRouter()
+
+  useEffect(() => {
+    if (user) {
+      router.push('/dashboard')
+    }
+  }, [user, router])
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {}
@@ -77,7 +92,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validateForm()) return
 
     setIsLoading(true)
@@ -85,9 +100,7 @@ export default function LoginPage() {
 
     try {
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register'
-      const payload = isLogin 
-        ? { email: formData.email, password: formData.password }
-        : formData
+      const payload = isLogin ? { email: formData.email, password: formData.password } : formData
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -108,18 +121,30 @@ export default function LoginPage() {
             router.push('/dashboard')
           }, 1500)
         } else {
-          setMessage('Account created! Please login with your credentials.')
-          setMessageType('success')
-          setIsLogin(true)
-          setFormData({ email: formData.email, password: '' })
+          if (data.code === 'VERIFY_EMAIL') {
+            setRegisteredEmail(data.email)
+            setRegisterSuccess(true)
+          } else {
+            setMessage('Account created! Please login with your credentials.')
+            setMessageType('success')
+            setIsLogin(true)
+            setFormData({ email: formData.email, password: '' })
+          }
         }
       } else {
-        setMessage(data.message || 'Something went wrong')
-        setMessageType('error')
+        if (data.code === 'EMAIL_NOT_VERIFIED') {
+          setShowVerifyBanner(true)
+          setUnverifiedEmail(data.email || formData.email)
+          setMessage('')
+        } else {
+          setMessage(data.error || data.message || 'Login failed')
+          setMessageType('error')
+          setShowVerifyBanner(false)
+        }
         if (data.errors) {
           const apiErrors: FormErrors = {}
           data.errors.forEach((error: any) => {
-            apiErrors[error.field] = error.message
+            apiErrors[error.field as keyof FormErrors] = error.message
           })
           setErrors(apiErrors)
         }
@@ -134,11 +159,37 @@ export default function LoginPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-    
+    setFormData((prev) => ({ ...prev, [name]: value }))
+
     // Clear specific error when user starts typing
     if (errors[name as keyof FormErrors]) {
-      setErrors(prev => ({ ...prev, [name]: undefined }))
+      setErrors((prev) => ({ ...prev, [name]: undefined }))
+    }
+  }
+
+  const handleResendVerification = async () => {
+    setResendLoading(true)
+    setResendError('')
+    setResendSuccess(false)
+
+    try {
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: unverifiedEmail }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setResendSuccess(true)
+      } else {
+        setResendError(data.error || 'Failed to send')
+      }
+    } catch (error) {
+      setResendError('Network error. Please try again.')
+    } finally {
+      setResendLoading(false)
     }
   }
 
@@ -150,35 +201,68 @@ export default function LoginPage() {
           <div className="flex items-center space-x-3 mb-8">
             <div className="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A9.001 9.001 0 0112 21a9.001 9.001 0 01-9-9.255A9.001 9.001 0 0112 3a9.001 9.001 0 019 9.255z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 13.255A9.001 9.001 0 0112 21a9.001 9.001 0 01-9-9.255A9.001 9.001 0 0112 3a9.001 9.001 0 019 9.255z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4"
+                />
               </svg>
             </div>
             <span className="text-2xl font-bold">JobBoard Pro</span>
           </div>
-          
+
           <h1 className="text-4xl font-bold mb-4">Find Your Dream Job Today</h1>
           <p className="text-lg text-slate-300 mb-12">
-            Connect with top companies and discover opportunities that match your skills and ambitions.
+            Connect with top companies and discover opportunities that match your skills and
+            ambitions.
           </p>
-          
+
           <div className="space-y-6">
             <div className="flex items-start space-x-4">
               <div className="w-12 h-12 bg-indigo-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <svg
+                  className="w-6 h-6 text-indigo-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
                 </svg>
               </div>
               <div>
                 <h3 className="text-xl font-semibold mb-2">Smart Job Matching</h3>
-                <p className="text-slate-400">AI-powered recommendations tailored to your profile</p>
+                <p className="text-slate-400">
+                  AI-powered recommendations tailored to your profile
+                </p>
               </div>
             </div>
-            
+
             <div className="flex items-start space-x-4">
               <div className="w-12 h-12 bg-indigo-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-6 h-6 text-indigo-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
               <div>
@@ -186,11 +270,21 @@ export default function LoginPage() {
                 <p className="text-slate-400">Save unlimited jobs and get priority access</p>
               </div>
             </div>
-            
+
             <div className="flex items-start space-x-4">
               <div className="w-12 h-12 bg-indigo-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                <svg
+                  className="w-6 h-6 text-indigo-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                  />
                 </svg>
               </div>
               <div>
@@ -200,7 +294,7 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
-        
+
         <div className="flex space-x-8 pt-8 border-t border-slate-700">
           <div>
             <div className="text-3xl font-bold text-indigo-400">500+</div>
@@ -224,18 +318,30 @@ export default function LoginPage() {
             <div className="flex lg:hidden items-center justify-center space-x-3 mb-6">
               <div className="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A9.001 9.001 0 0112 21a9.001 9.001 0 01-9-9.255A9.001 9.001 0 0112 3a9.001 9.001 0 019 9.255z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 13.255A9.001 9.001 0 0112 21a9.001 9.001 0 01-9-9.255A9.001 9.001 0 0112 3a9.001 9.001 0 019 9.255z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4"
+                  />
                 </svg>
               </div>
               <span className="text-2xl font-bold text-slate-900">JobBoard Pro</span>
             </div>
-            
+
             <h2 className="text-3xl font-bold text-slate-900 mb-2">
               {isLogin ? 'Welcome Back' : 'Create Account'}
             </h2>
             <p className="text-slate-600">
-              {isLogin ? 'Sign in to your account to continue' : 'Join thousands of job seekers today'}
+              {isLogin
+                ? 'Sign in to your account to continue'
+                : 'Join thousands of job seekers today'}
             </p>
           </div>
 
@@ -285,164 +391,305 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  name="fullName"
-                  value={formData.fullName || ''}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 ${
-                    errors.fullName ? 'border-red-500' : 'border-slate-300'
-                  }`}
-                  placeholder="John Doe"
-                />
-                {errors.fullName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>
-                )}
+          {/* Email Verification Banner */}
+          {showVerifyBanner && (
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-4">
+              <div className="text-yellow-400 font-semibold text-sm mb-1">
+                📧 Email Not Verified
               </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Email Address
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 ${
-                  errors.email ? 'border-red-500' : 'border-slate-300'
-                }`}
-                placeholder="john@example.com"
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+              <div className="text-yellow-300/70 text-xs mb-1">
+                Check your inbox for the verification link.
+              </div>
+              <div className="text-yellow-400/60 text-xs mb-2">Sent to: {unverifiedEmail}</div>
+              {resendSuccess && (
+                <div className="text-green-400 text-xs">✅ Email sent! Check your inbox.</div>
               )}
-            </div>
-
-            {!isLogin && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Phone Number (Optional)
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone || ''}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 ${
-                    errors.phone ? 'border-red-500' : 'border-slate-300'
-                  }`}
-                  placeholder="9876543210"
-                />
-                {errors.phone && (
-                  <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-                )}
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 ${
-                    errors.password ? 'border-red-500' : 'border-slate-300'
-                  }`}
-                  placeholder="••••••••"
-                />
+              {resendError && <div className="text-red-400 text-xs">{resendError}</div>}
+              {!resendSuccess && (
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                  onClick={handleResendVerification}
+                  disabled={resendLoading}
+                  className="text-yellow-400 underline text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    {showPassword ? (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                    ) : (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    )}
-                  </svg>
+                  {resendLoading ? 'Sending...' : 'Resend verification email'}
+                </button>
+              )}
+              <div className="text-slate-500 text-xs mt-2">Also check your spam folder</div>
+            </div>
+          )}
+
+          {/* Register Success Screen */}
+          {registerSuccess && !isLogin && (
+            <div className="text-center py-8">
+              <div className="text-7xl mb-4">📧</div>
+              <h3 className="text-white text-3xl font-bold mb-3">Check Your Email!</h3>
+              <p className="text-slate-400 mt-3">We sent a verification link to:</p>
+              <p className="text-indigo-400 font-semibold text-lg mt-1">{registeredEmail}</p>
+
+              <div className="border-t border-slate-800 my-6"></div>
+
+              <div className="text-left space-y-2 max-w-sm mx-auto">
+                <div className="text-slate-300 text-sm py-1">✅ Open your email inbox</div>
+                <div className="text-slate-300 text-sm py-1">✅ Find email from JobBoard Pro</div>
+                <div className="text-slate-300 text-sm py-1">✅ Click "Verify Email" button</div>
+                <div className="text-slate-300 text-sm py-1">✅ Come back and login</div>
+              </div>
+
+              <div className="border-t border-slate-800 my-6"></div>
+
+              <div className="text-slate-500 text-sm mt-4">Didn't receive the email?</div>
+              <div className="text-slate-600 text-xs">Check your spam or junk folder</div>
+
+              <button
+                onClick={() => {
+                  setResendLoading(true)
+                  fetch('/api/auth/resend-verification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: registeredEmail }),
+                  })
+                    .then((res) => res.json())
+                    .then((data) => {
+                      if (data.success) {
+                        setResendSuccess(true)
+                      } else {
+                        setResendError(data.error)
+                      }
+                    })
+                    .catch(() => setResendError('Failed to resend'))
+                    .finally(() => setResendLoading(false))
+                }}
+                disabled={resendLoading}
+                className="text-indigo-400 underline text-sm mt-3 cursor-pointer disabled:opacity-50"
+              >
+                {resendLoading ? 'Sending...' : 'Resend verification email'}
+              </button>
+
+              {resendSuccess && <div className="text-green-400 text-sm mt-2">✅ Email sent!</div>}
+              {resendError && <div className="text-red-400 text-sm mt-2">{resendError}</div>}
+
+              <div className="border-t border-slate-800 my-6"></div>
+
+              <div className="text-slate-500 text-sm">
+                Already verified?{' '}
+                <button
+                  onClick={() => {
+                    setRegisterSuccess(false)
+                    setIsLogin(true)
+                  }}
+                  className="text-indigo-400 underline"
+                >
+                  Login here
                 </button>
               </div>
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-              )}
-            </div>
 
-            {!isLogin && (
+              <div className="text-slate-500 text-xs mt-2">
+                Used wrong email?{' '}
+                <button
+                  onClick={() => setRegisterSuccess(false)}
+                  className="text-indigo-400 underline"
+                >
+                  Register again
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!registerSuccess || isLogin ? (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {!isLogin && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={formData.fullName || ''}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 ${
+                      errors.fullName ? 'border-red-500' : 'border-slate-300'
+                    }`}
+                    placeholder="John Doe"
+                  />
+                  {errors.fullName && (
+                    <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Confirm Password
+                  Email Address
                 </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 ${
+                    errors.email ? 'border-red-500' : 'border-slate-300'
+                  }`}
+                  placeholder="john@example.com"
+                />
+                {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+              </div>
+
+              {!isLogin && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Phone Number (Optional)
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone || ''}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 ${
+                      errors.phone ? 'border-red-500' : 'border-slate-300'
+                    }`}
+                    placeholder="9876543210"
+                  />
+                  {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
                 <div className="relative">
                   <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    name="confirmPassword"
-                    value={formData.confirmPassword || ''}
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
                     onChange={handleInputChange}
                     className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 ${
-                      errors.confirmPassword ? 'border-red-500' : 'border-slate-300'
+                      errors.password ? 'border-red-500' : 'border-slate-300'
                     }`}
                     placeholder="••••••••"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      {showConfirmPassword ? (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                      {showPassword ? (
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                        />
                       ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
                       )}
                     </svg>
                   </button>
                 </div>
-                {errors.confirmPassword && (
-                  <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
-                )}
+                {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              {isLoading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  {isLogin ? 'Signing In...' : 'Creating Account...'}
-                </>
-              ) : (
-                isLogin ? 'Sign In' : 'Create Account'
+              {!isLogin && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      name="confirmPassword"
+                      value={formData.confirmPassword || ''}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 ${
+                        errors.confirmPassword ? 'border-red-500' : 'border-slate-300'
+                      }`}
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        {showConfirmPassword ? (
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                          />
+                        ) : (
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        )}
+                      </svg>
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+                  )}
+                </div>
               )}
-            </button>
 
-            {isLogin && (
-              <div className="text-center">
-                <Link href="/forgot-password" className="text-indigo-600 hover:text-indigo-700 text-sm font-medium">
-                  Forgot your password?
-                </Link>
-              </div>
-            )}
-          </form>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                {isLoading ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    {isLogin ? 'Signing In...' : 'Creating Account...'}
+                  </>
+                ) : isLogin ? (
+                  'Sign In'
+                ) : (
+                  'Create Account'
+                )}
+              </button>
+
+              {isLogin && (
+                <div className="text-center">
+                  <Link
+                    href="/forgot-password"
+                    className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                  >
+                    Forgot your password?
+                  </Link>
+                </div>
+              )}
+            </form>
+          ) : null}
         </div>
       </div>
     </div>

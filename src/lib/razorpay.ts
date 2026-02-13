@@ -1,8 +1,8 @@
 import Razorpay from 'razorpay'
 
 export const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
+  key_id: process.env.RAZORPAY_KEY_ID || 'dummy_key',
+  key_secret: process.env.RAZORPAY_KEY_SECRET || 'dummy_secret',
 })
 
 export type PlanType = 'monthly' | 'quarterly' | 'yearly'
@@ -10,9 +10,10 @@ export type PlanType = 'monthly' | 'quarterly' | 'yearly'
 export const PLANS = {
   monthly: {
     name: 'Monthly',
-    amount: 49900,
+    amount: 100,
     duration: 30,
     description: 'Perfect for getting started',
+    savings: undefined,
   },
   quarterly: {
     name: 'Quarterly',

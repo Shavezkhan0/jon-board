@@ -4,19 +4,18 @@ import { Job, User } from '@/types'
 import JobDetailClient from '@/components/Jobs/JobDetailClient'
 
 interface JobDetailPageProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 async function getJob(slug: string): Promise<Job | null> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-  
+
   try {
-    const response = await fetch(
-      `${baseUrl}/api/jobs?where[slug][equals]=${slug}&depth=1`,
-      { cache: 'no-store' }
-    )
+    const response = await fetch(`${baseUrl}/api/jobs?where[slug][equals]=${slug}&depth=1`, {
+      cache: 'no-store',
+    })
 
     if (!response.ok) {
       throw new Error('Failed to fetch job')
@@ -32,7 +31,7 @@ async function getJob(slug: string): Promise<Job | null> {
 
 async function getRelatedJobs(category: string, currentJobId: string): Promise<Job[]> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-  
+
   try {
     const where = {
       category: { equals: category },
@@ -43,7 +42,7 @@ async function getRelatedJobs(category: string, currentJobId: string): Promise<J
 
     const response = await fetch(
       `${baseUrl}/api/jobs?where=${JSON.stringify(where)}&sort=-postedAt&limit=3&depth=1`,
-      { cache: 'no-store' }
+      { cache: 'no-store' },
     )
 
     if (!response.ok) {
@@ -60,7 +59,7 @@ async function getRelatedJobs(category: string, currentJobId: string): Promise<J
 
 async function incrementViewCount(jobId: string) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-  
+
   try {
     await fetch(`${baseUrl}/api/jobs/${jobId}/view`, {
       method: 'POST',
@@ -72,6 +71,7 @@ async function incrementViewCount(jobId: string) {
 }
 
 export default async function JobDetailPage({ params }: JobDetailPageProps) {
+  const { slug } = await params
   // Get current user and check subscription
   let user: User | null = null
   let isSubscribed = false
@@ -89,14 +89,14 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
   }
 
   // Fetch job
-  const job = await getJob(params.slug)
+  const job = await getJob(slug)
 
   if (!job) {
     notFound()
   }
 
   // Check if job is active and not expired
-  if (!job.isActive || new Date(job.expiresAt) < new Date()) {
+  if (!job.isActive || (job.expiresAt && new Date(job.expiresAt) < new Date())) {
     notFound()
   }
 
@@ -118,9 +118,10 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
 
       if (savedJobsResponse.ok) {
         const savedJobsData = await savedJobsResponse.json()
-        isSaved = savedJobsData.savedJobs?.some((saved: any) => 
-          (typeof saved.job === 'string' ? saved.job : saved.job.id) === job.id
-        ) || false
+        isSaved =
+          savedJobsData.savedJobs?.some(
+            (saved: any) => (typeof saved.job === 'string' ? saved.job : saved.job.id) === job.id,
+          ) || false
       }
     } catch (error) {
       console.error('Error checking saved status:', error)
@@ -139,7 +140,8 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
 }
 
 export async function generateMetadata({ params }: JobDetailPageProps) {
-  const job = await getJob(params.slug)
+  const { slug } = await params
+  const job = await getJob(slug)
 
   if (!job) {
     return {

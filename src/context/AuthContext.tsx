@@ -31,6 +31,7 @@ interface AuthContextType {
   }) => Promise<{ success: boolean; message: string }>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
+  toast: (message: string, type: 'success' | 'error' | 'info') => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -100,7 +101,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
+  const login = async (
+    email: string,
+    password: string,
+  ): Promise<{ success: boolean; message: string }> => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -187,6 +191,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  const toast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    // Simple toast implementation - you can replace with your toast library
+    const toastColor =
+      type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+    const toastElement = document.createElement('div')
+    toastElement.className = `fixed top-4 right-4 ${toastColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300`
+    toastElement.textContent = message
+    document.body.appendChild(toastElement)
+
+    setTimeout(() => {
+      toastElement.remove()
+    }, 3000)
+  }
+
   const value: AuthContextType = {
     user,
     isLoading,
@@ -195,6 +213,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     refreshUser,
+    toast,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

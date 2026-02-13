@@ -13,10 +13,10 @@ interface JobCardProps {
 const jobTypeColors = {
   'full-time': 'bg-blue-100 text-blue-800',
   'part-time': 'bg-yellow-100 text-yellow-800',
-  'remote': 'bg-green-100 text-green-800',
-  'freelance': 'bg-purple-100 text-purple-800',
-  'internship': 'bg-pink-100 text-pink-800',
-  'contract': 'bg-indigo-100 text-indigo-800',
+  remote: 'bg-green-100 text-green-800',
+  freelance: 'bg-purple-100 text-purple-800',
+  internship: 'bg-pink-100 text-pink-800',
+  contract: 'bg-indigo-100 text-indigo-800',
 }
 
 const experienceLevelColors = {
@@ -30,10 +30,10 @@ const experienceLevelColors = {
 
 export default function JobCard({ job, isSaved, onSaveToggle, isSubscribed }: JobCardProps) {
   const formatSalary = (min?: number, max?: number) => {
-    if (!min && !max) return 'Competitive'
     if (min && max) return `₹${min.toLocaleString()} - ₹${max.toLocaleString()}`
     if (min) return `₹${min.toLocaleString()}+`
-    return `Up to ₹${max.toLocaleString()}`
+    if (max) return `Up to ₹${max.toLocaleString()}`
+    return 'Competitive'
   }
 
   const formatPostedDate = (dateString: string) => {
@@ -41,7 +41,7 @@ export default function JobCard({ job, isSaved, onSaveToggle, isSubscribed }: Jo
     const now = new Date()
     const diffTime = Math.abs(now.getTime() - date.getTime())
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    
+
     if (diffDays === 0) return 'Today'
     if (diffDays === 1) return 'Yesterday'
     if (diffDays < 7) return `${diffDays} days ago`
@@ -52,13 +52,13 @@ export default function JobCard({ job, isSaved, onSaveToggle, isSubscribed }: Jo
   const getCompanyInitials = (company: string) => {
     return company
       .split(' ')
-      .map(word => word[0])
+      .map((word) => word[0])
       .join('')
       .toUpperCase()
       .slice(0, 2)
   }
 
-  const isExpired = new Date(job.expiresAt) < new Date()
+  const isExpired = job.expiresAt ? new Date(job.expiresAt) < new Date() : false
 
   return (
     <div className="group relative bg-white rounded-lg border border-slate-200 hover:border-indigo-300 hover:shadow-lg transition-all duration-200 overflow-hidden">
@@ -86,13 +86,25 @@ export default function JobCard({ job, isSaved, onSaveToggle, isSubscribed }: Jo
           !isSubscribed
             ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
             : isSaved
-            ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-            : 'bg-white text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 border border-slate-200'
+              ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+              : 'bg-white text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 border border-slate-200'
         }`}
-        title={isSubscribed ? (isSaved ? 'Remove from saved' : 'Save job') : 'Subscribe to save jobs'}
+        title={
+          isSubscribed ? (isSaved ? 'Remove from saved' : 'Save job') : 'Subscribe to save jobs'
+        }
       >
-        <svg className="w-5 h-5" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+        <svg
+          className="w-5 h-5"
+          fill={isSaved ? 'currentColor' : 'none'}
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+          />
         </svg>
       </button>
 
@@ -119,33 +131,68 @@ export default function JobCard({ job, isSaved, onSaveToggle, isSubscribed }: Jo
           </div>
         </div>
 
-        {/* Location and Time */}
-        <div className="flex items-center text-sm text-slate-500 mb-3">
-          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <span className="truncate">{job.location}</span>
-          {job.isRemote && (
-            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-800">
-              🌍 Remote
+        {/* Location and Work Mode */}
+        <div className="flex items-center flex-wrap text-sm text-slate-500 mb-3 gap-2">
+          <div className="flex items-center">
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+            <span className="truncate">{job.location}</span>
+          </div>
+          {job.workMode && (
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                job.workMode === 'remote'
+                  ? 'bg-green-100 text-green-800'
+                  : job.workMode === 'hybrid'
+                    ? 'bg-blue-100 text-blue-800'
+                    : job.workMode === 'flexible'
+                      ? 'bg-purple-100 text-purple-800'
+                      : 'bg-slate-100 text-slate-800'
+              }`}
+            >
+              {job.workMode === 'remote' && '🌍 Remote'}
+              {job.workMode === 'hybrid' && '🔄 Hybrid'}
+              {job.workMode === 'office' && '🏢 Office'}
+              {job.workMode === 'flexible' && '✨ Flexible'}
             </span>
           )}
+          {(job.experienceYearsMin !== null && job.experienceYearsMin !== undefined) ||
+          (job.experienceYearsMax !== null && job.experienceYearsMax !== undefined) ? (
+            <span className="text-xs text-slate-500">
+              • {job.experienceYearsMin || 0}-{job.experienceYearsMax || '+'} years exp
+            </span>
+          ) : null}
         </div>
 
         {/* Badges Row */}
         <div className="flex flex-wrap gap-2 mb-3">
-          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${jobTypeColors[job.jobType]}`}>
-            {job.jobType.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+          <span
+            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${jobTypeColors[job.jobType]}`}
+          >
+            {job.jobType.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
           </span>
-          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${experienceLevelColors[job.experienceLevel]}`}>
-            {job.experienceLevel.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+          <span
+            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${experienceLevelColors[job.experienceLevel]}`}
+          >
+            {job.experienceLevel.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
           </span>
         </div>
 
         {/* Salary */}
         <div className="text-lg font-semibold text-slate-900 mb-3">
-          {formatSalary(job.salaryMin, job.salaryMax)}
+          {formatSalary(job.salaryMin ?? undefined, job.salaryMax ?? undefined)}
           {job.salaryCurrency === 'USD' && ' USD'}
         </div>
 
@@ -170,10 +217,8 @@ export default function JobCard({ job, isSaved, onSaveToggle, isSubscribed }: Jo
 
         {/* Posted Time */}
         <div className="flex items-center justify-between text-xs text-slate-500">
-          <span>Posted {formatPostedDate(job.postedAt)}</span>
-          {isExpired && (
-            <span className="text-red-600 font-medium">Expired</span>
-          )}
+          <span>Posted {formatPostedDate(job.postedAt || '')}</span>
+          {isExpired && <span className="text-red-600 font-medium">Expired</span>}
         </div>
       </Link>
 
@@ -190,8 +235,18 @@ export default function JobCard({ job, isSaved, onSaveToggle, isSubscribed }: Jo
       {/* Paywall Overlay */}
       {!isSubscribed && (
         <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center z-20 rounded-lg">
-          <svg className="w-12 h-12 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          <svg
+            className="w-12 h-12 text-slate-400 mb-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+            />
           </svg>
           <h3 className="text-lg font-semibold text-slate-900 mb-1">Subscribe to View</h3>
           <p className="text-sm text-slate-600 text-center mb-4 px-4">

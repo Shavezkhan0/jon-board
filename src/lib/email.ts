@@ -290,21 +290,21 @@ export async function sendWelcomeEmail(email: string, fullName: string) {
 }
 
 export async function sendSubscriptionConfirmation(
-  email: string, 
-  fullName: string, 
+  email: string,
+  fullName: string,
   plan: string,
-  expiresAt: string
+  expiresAt: string,
 ) {
   const planPrices: Record<string, string> = {
-    monthly: '₹499/month',
+    monthly: '₹1/month',
     quarterly: '₹1,299/quarter',
-    yearly: '₹2,999/year'
+    yearly: '₹2,999/year',
   }
 
   const formattedDate = new Date(expiresAt).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
   })
 
   const html = createEmailTemplate(`
@@ -392,15 +392,15 @@ export async function sendSubscriptionConfirmation(
 }
 
 export async function sendSubscriptionExpiryReminder(
-  email: string, 
-  fullName: string, 
+  email: string,
+  fullName: string,
   daysLeft: number,
-  plan: string
+  plan: string,
 ) {
   const planPrices: Record<string, string> = {
-    monthly: '₹499/month',
+    monthly: '₹1/month',
     quarterly: '₹1,299/quarter',
-    yearly: '₹2,999/year'
+    yearly: '₹2,999/year',
   }
 
   const html = createEmailTemplate(`
@@ -434,7 +434,7 @@ export async function sendSubscriptionExpiryReminder(
           <h4 style="margin: 0 0 15px 0; color: #1f2937;">Available Plans:</h4>
           <div style="display: grid; gap: 15px;">
             <div style="border: 1px solid #e5e7eb; padding: 15px; border-radius: 6px;">
-              <strong>Starter:</strong> ₹499/month<br>
+              <strong>Starter:</strong> ₹1/month<br>
               <small style="color: #6b7280;">50+ job listings, Basic features</small>
             </div>
             <div style="border: 1px solid #4f46e5; padding: 15px; border-radius: 6px; background: #f0f9ff;">
@@ -559,6 +559,158 @@ export async function sendSubscriptionExpired(email: string, fullName: string) {
   return sendEmail({
     to: [email],
     subject: 'Your JobBoard Pro subscription has expired',
+    html,
+  })
+}
+
+interface JobNotificationData {
+  title: string
+  company: string
+  location: string
+  jobType: string
+  slug: string
+  salaryMin?: number
+  salaryMax?: number
+}
+
+export async function sendJobNotificationEmail(
+  email: string,
+  fullName: string,
+  job: JobNotificationData,
+) {
+  const salaryRange =
+    job.salaryMin && job.salaryMax
+      ? `₹${job.salaryMin.toLocaleString()} - ₹${job.salaryMax.toLocaleString()}`
+      : 'Competitive'
+
+  const html = createEmailTemplate(`
+    <div class="container">
+      <div class="header">
+        <div class="logo">
+          <svg width="30" height="30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A9.001 9.001 0 0112 21a9.001 9.001 0 01-9-9.255A9.001 9.001 0 0112 3a9.001 9.001 0 019 9.255z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"></path>
+          </svg>
+          JobBoard Pro
+        </div>
+        <h1 style="color: white; margin: 0;">New Job Alert! 💼</h1>
+      </div>
+      
+      <div class="content">
+        <h2 class="text-xl mb-4">Hi ${fullName}!</h2>
+        
+        <p class="mb-4">
+          A new job opportunity matching your profile has been posted!
+        </p>
+        
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
+          <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 18px;">${job.title}</h3>
+          
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+            <span style="background: #e0e7ff; color: #4338ca; padding: 4px 12px; border-radius: 20px; font-size: 13px;">
+              ${job.company}
+            </span>
+            <span style="background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 20px; font-size: 13px;">
+              ${job.location}
+            </span>
+            <span style="background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 20px; font-size: 13px;">
+              ${job.jobType}
+            </span>
+          </div>
+          
+          <p style="color: #64748b; margin: 0; font-size: 14px;">
+            <strong>Salary:</strong> ${salaryRange}
+          </p>
+        </div>
+        
+        <div class="text-center mb-4">
+          <a href="${process.env.NEXT_PUBLIC_APP_URL}/jobs/${job.slug}" class="button">
+            View Job Details
+          </a>
+        </div>
+        
+        <p class="text-gray-600">
+          Don't miss out on this opportunity! Apply now to increase your chances of getting hired.<br>
+          The JobBoard Pro Team
+        </p>
+      </div>
+      
+      <div class="footer">
+        <div class="social-links">
+          <a href="#" class="social-link">LinkedIn</a>
+          <a href="#" class="social-link">Twitter</a>
+          <a href="#" class="social-link">Instagram</a>
+        </div>
+        <p class="text-gray-600 text-sm mb-2">
+          Made with ❤️ in India
+        </p>
+        <p class="text-gray-600 text-sm">
+          You received this email because you subscribed to job alerts.<br>
+          <a href="${process.env.NEXT_PUBLIC_APP_URL}/unsubscribe" style="color: #6b7280;">Unsubscribe</a>
+        </p>
+      </div>
+    </div>
+  `)
+
+  return sendEmail({
+    to: [email],
+    subject: `New Job: ${job.title} at ${job.company}`,
+    html,
+  })
+}
+
+export async function sendGeneralNotificationEmail(
+  email: string,
+  fullName: string,
+  title: string,
+  message: string,
+) {
+  const html = createEmailTemplate(`
+    <div class="container">
+      <div class="header">
+        <div class="logo">
+          <svg width="30" height="30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A9.001 9.001 0 0112 21a9.001 9.001 0 01-9-9.255A9.001 9.001 0 0112 3a9.001 9.001 0 019 9.255z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"></path>
+          </svg>
+          JobBoard Pro
+        </div>
+        <h1 style="color: white; margin: 0;">${title}</h1>
+      </div>
+      
+      <div class="content">
+        <h2 class="text-xl mb-4">Hi ${fullName}!</h2>
+        
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
+          <p style="margin: 0; color: #334155; line-height: 1.6;">${message}</p>
+        </div>
+        
+        <p class="text-gray-600">
+          Thank you for being a part of JobBoard Pro!<br>
+          The JobBoard Pro Team
+        </p>
+      </div>
+      
+      <div class="footer">
+        <div class="social-links">
+          <a href="#" class="social-link">LinkedIn</a>
+          <a href="#" class="social-link">Twitter</a>
+          <a href="#" class="social-link">Instagram</a>
+        </div>
+        <p class="text-gray-600 text-sm mb-2">
+          Made with ❤️ in India
+        </p>
+        <p class="text-gray-600 text-sm">
+          You received this notification from JobBoard Pro.<br>
+          <a href="${process.env.NEXT_PUBLIC_APP_URL}/unsubscribe" style="color: #6b7280;">Unsubscribe</a>
+        </p>
+      </div>
+    </div>
+  `)
+
+  return sendEmail({
+    to: [email],
+    subject: title,
     html,
   })
 }

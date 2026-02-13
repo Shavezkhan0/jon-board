@@ -1,7 +1,7 @@
-import React from 'react'
+import { ReactNode } from 'react'
 import { AuthProvider } from '@/context/AuthContext'
 import { ToastProvider } from '@/components/ui/Toast'
-import Navbar from '@/components/Navbar'
+import NavbarClient from './NavbarClient'
 import '../globals.css'
 
 export const metadata = {
@@ -10,15 +10,15 @@ export const metadata = {
 }
 
 export default function RootLayout(props: { children: React.ReactNode }) {
-  const { children } = props
-
   return (
     <html lang="en">
+      <head>
+        <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+      </head>
       <body className="min-h-screen">
         <AuthProvider>
           <ToastProvider>
-            <Navbar />
-            <main className="min-h-screen">{children}</main>
+            <NavbarClient>{props.children}</NavbarClient>
           </ToastProvider>
         </AuthProvider>
       </body>

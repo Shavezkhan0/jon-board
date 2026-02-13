@@ -2,10 +2,18 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { debounce } from 'lodash'
+import debounce from 'lodash/debounce'
 import JobCard from './JobCard'
 import PaywallOverlay from './PaywallOverlay'
-import { Job, JobsResponse, User, JobFilters, JobTypeOption, CategoryOption, ExperienceLevelOption } from '@/types'
+import {
+  Job,
+  JobsResponse,
+  User,
+  JobFilters,
+  JobTypeOption,
+  CategoryOption,
+  ExperienceLevelOption,
+} from '@/types'
 import { useToast } from '@/components/ui/Toast'
 
 // Constants for filters
@@ -79,22 +87,26 @@ export default function JobsPageClient({
   // Update URL with new filters
   const updateURL = (newFilters: JobFilters, page: number = 1, newSort: string = sort) => {
     const params = new URLSearchParams()
-    
+
     Object.entries(newFilters).forEach(([key, value]) => {
       if (value) {
         params.set(key, value)
       }
     })
-    
+
     if (page > 1) params.set('page', page.toString())
     if (newSort !== 'newest') params.set('sort', newSort)
-    
+
     const newUrl = params.toString() ? `/jobs?${params.toString()}` : '/jobs'
     router.push(newUrl, { scroll: false })
   }
 
   // Update filters and fetch new jobs
-  const updateFilters = async (newFilters: JobFilters, page: number = 1, newSort: string = sort) => {
+  const updateFilters = async (
+    newFilters: JobFilters,
+    page: number = 1,
+    newSort: string = sort,
+  ) => {
     setFilters(newFilters)
     setCurrentPage(page)
     setSort(newSort)
@@ -102,10 +114,13 @@ export default function JobsPageClient({
 
     try {
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-      
+
       // Build where query
-      const where: any = { isActive: { equals: true }, expiresAt: { greater_than: new Date().toISOString() } }
-      
+      const where: any = {
+        isActive: { equals: true },
+        expiresAt: { greater_than: new Date().toISOString() },
+      }
+
       if (newFilters.search) {
         where.or = [
           { title: { like: newFilters.search } },
@@ -121,9 +136,15 @@ export default function JobsPageClient({
       // Build sort query
       let sortQuery = '-postedAt'
       switch (newSort) {
-        case 'oldest': sortQuery = 'postedAt'; break
-        case 'salary-high': sortQuery = '-salaryMax'; break
-        case 'salary-low': sortQuery = 'salaryMax'; break
+        case 'oldest':
+          sortQuery = 'postedAt'
+          break
+        case 'salary-high':
+          sortQuery = '-salaryMax'
+          break
+        case 'salary-low':
+          sortQuery = 'salaryMax'
+          break
       }
 
       const queryString = new URLSearchParams({
@@ -162,7 +183,7 @@ export default function JobsPageClient({
     const isSaved = savedJobs.has(jobId)
     const method = isSaved ? 'DELETE' : 'POST'
     const url = isSaved ? `/api/jobs/save?jobId=${jobId}` : '/api/jobs/save'
-    
+
     try {
       const response = await fetch(url, {
         method,
@@ -174,7 +195,7 @@ export default function JobsPageClient({
       const data = await response.json()
 
       if (data.success) {
-        setSavedJobs(prev => {
+        setSavedJobs((prev) => {
           const newSet = new Set(prev)
           if (isSaved) {
             newSet.delete(jobId)
@@ -202,7 +223,7 @@ export default function JobsPageClient({
   }
 
   // Check if any filters are active
-  const hasActiveFilters = Object.values(filters).some(value => value && value !== '')
+  const hasActiveFilters = Object.values(filters).some((value) => value && value !== '')
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -219,18 +240,33 @@ export default function JobsPageClient({
                 onChange={(e) => debouncedSearch(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               />
-              <svg className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <svg
+                className="absolute left-3 top-3.5 w-5 h-5 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
               </svg>
             </div>
-            
+
             {/* Mobile Filter Button */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
               className="lg:hidden flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                />
               </svg>
               <span>Filters</span>
               {hasActiveFilters && (
@@ -308,8 +344,18 @@ export default function JobsPageClient({
               </div>
             ) : (
               <div className="text-center py-12">
-                <svg className="mx-auto h-12 w-12 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="mx-auto h-12 w-12 text-slate-400 mb-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 <h3 className="text-lg font-medium text-slate-900 mb-2">No jobs found</h3>
                 <p className="text-slate-600 mb-4">Try adjusting your filters or search terms</p>
@@ -357,7 +403,13 @@ export default function JobsPageClient({
 }
 
 // Filter Sidebar Component
-function FiltersSidebar({ filters, onFiltersChange, onClearFilters }: any) {
+interface FiltersSidebarProps {
+  filters: JobFilters
+  onFiltersChange: (filters: JobFilters, page?: number, sort?: string) => void
+  onClearFilters: () => void
+}
+
+function FiltersSidebar({ filters, onFiltersChange, onClearFilters }: FiltersSidebarProps) {
   return (
     <div className="bg-white rounded-lg border border-slate-200 p-6 sticky top-24">
       <div className="flex justify-between items-center mb-6">
@@ -381,10 +433,12 @@ function FiltersSidebar({ filters, onFiltersChange, onClearFilters }: any) {
               <input
                 type="checkbox"
                 checked={filters.jobType === type.value}
-                onChange={(e) => onFiltersChange({ 
-                  ...filters, 
-                  jobType: e.target.checked ? type.value : undefined 
-                })}
+                onChange={(e) =>
+                  onFiltersChange({
+                    ...filters,
+                    jobType: e.target.checked ? type.value : undefined,
+                  })
+                }
                 className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
               />
               <span className="ml-2 text-sm text-slate-600">{type.label}</span>
@@ -402,10 +456,12 @@ function FiltersSidebar({ filters, onFiltersChange, onClearFilters }: any) {
               <input
                 type="checkbox"
                 checked={filters.category === category.value}
-                onChange={(e) => onFiltersChange({ 
-                  ...filters, 
-                  category: e.target.checked ? category.value : undefined 
-                })}
+                onChange={(e) =>
+                  onFiltersChange({
+                    ...filters,
+                    category: e.target.checked ? category.value : undefined,
+                  })
+                }
                 className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
               />
               <span className="ml-2 text-sm text-slate-600">{category.label}</span>
@@ -423,10 +479,12 @@ function FiltersSidebar({ filters, onFiltersChange, onClearFilters }: any) {
               <input
                 type="checkbox"
                 checked={filters.experienceLevel === level.value}
-                onChange={(e) => onFiltersChange({ 
-                  ...filters, 
-                  experienceLevel: e.target.checked ? level.value : undefined 
-                })}
+                onChange={(e) =>
+                  onFiltersChange({
+                    ...filters,
+                    experienceLevel: e.target.checked ? level.value : undefined,
+                  })
+                }
                 className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
               />
               <span className="ml-2 text-sm text-slate-600">{level.label}</span>
@@ -451,7 +509,9 @@ function FiltersSidebar({ filters, onFiltersChange, onClearFilters }: any) {
 }
 
 // Pagination Component
-function Pagination({ currentPage, totalPages, totalJobs, onPageChange }: any) {
+import { PaginationProps } from '@/types'
+
+function Pagination({ currentPage, totalPages, totalJobs, onPageChange }: PaginationProps) {
   const pages = []
   const maxVisible = 5
   let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2))
@@ -477,7 +537,10 @@ function Pagination({ currentPage, totalPages, totalJobs, onPageChange }: any) {
 
       {startPage > 1 && (
         <>
-          <button onClick={() => onPageChange(1)} className="px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50">
+          <button
+            onClick={() => onPageChange(1)}
+            className="px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50"
+          >
             1
           </button>
           {startPage > 2 && <span className="px-2 text-slate-500">...</span>}
@@ -501,7 +564,10 @@ function Pagination({ currentPage, totalPages, totalJobs, onPageChange }: any) {
       {endPage < totalPages && (
         <>
           {endPage < totalPages - 1 && <span className="px-2 text-slate-500">...</span>}
-          <button onClick={() => onPageChange(totalPages)} className="px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50">
+          <button
+            onClick={() => onPageChange(totalPages)}
+            className="px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50"
+          >
             {totalPages}
           </button>
         </>
@@ -519,7 +585,19 @@ function Pagination({ currentPage, totalPages, totalJobs, onPageChange }: any) {
 }
 
 // Mobile Filter Menu Component
-function MobileFilterMenu({ filters, onFiltersChange, onClearFilters, onClose }: any) {
+interface MobileFilterMenuProps {
+  filters: JobFilters
+  onFiltersChange: (filters: JobFilters, page?: number, sort?: string) => void
+  onClearFilters: () => void
+  onClose: () => void
+}
+
+function MobileFilterMenu({
+  filters,
+  onFiltersChange,
+  onClearFilters,
+  onClose,
+}: MobileFilterMenuProps) {
   return (
     <div className="lg:hidden fixed inset-0 z-50 flex">
       <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
@@ -529,19 +607,24 @@ function MobileFilterMenu({ filters, onFiltersChange, onClearFilters, onClose }:
             <h2 className="text-lg font-semibold text-slate-900">Filters</h2>
             <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
         </div>
-        
+
         <div className="p-4">
           <FiltersSidebar
             filters={filters}
             onFiltersChange={onFiltersChange}
             onClearFilters={onClearFilters}
           />
-          
+
           <button
             onClick={onClose}
             className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 mt-4"

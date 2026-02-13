@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getPayload } from 'payload'
-import config from './src/payload.config'
+import payloadConfig from './src/payload.config'
 
 // Protected routes that require authentication
 const protectedRoutes = ['/dashboard', '/jobs', '/profile', '/subscribe']
@@ -12,14 +12,10 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Check if the current path is protected
-  const isProtectedRoute = protectedRoutes.some(route => 
-    pathname.startsWith(route)
-  )
+  const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route))
 
   // Check if the current path is public (should redirect authenticated users)
-  const isPublicRoute = publicRoutes.some(route => 
-    pathname === route
-  )
+  const isPublicRoute = publicRoutes.some((route) => pathname === route)
 
   // Get the authentication token from cookies
   const token = request.cookies.get('payload-token')?.value
@@ -34,8 +30,8 @@ export async function middleware(request: NextRequest) {
   if (isPublicRoute && token) {
     try {
       // Verify the token
-      const payload = await getPayload({ config })
-      const { user } = await payload.verifyToken({
+      const payload = await getPayload({ config: payloadConfig })
+      const { user } = await (payload as any).verifyToken({
         collection: 'users',
         token,
       })

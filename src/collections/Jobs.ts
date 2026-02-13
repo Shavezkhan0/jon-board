@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { sendJobNotification } from '@/lib/notifications/sendJobNotification'
 
 export const Jobs: CollectionConfig = {
   slug: 'jobs',
@@ -47,7 +48,7 @@ export const Jobs: CollectionConfig = {
       admin: {
         description: 'Company website URL',
       },
-      validate: (value) => {
+      validate: (value: string | null | undefined) => {
         if (!value) return true
         try {
           new URL(value)
@@ -66,11 +67,40 @@ export const Jobs: CollectionConfig = {
       },
     },
     {
-      name: 'isRemote',
-      type: 'checkbox',
-      defaultValue: false,
+      name: 'workMode',
+      type: 'select',
+      options: [
+        {
+          label: '🏢 Office',
+          value: 'office',
+        },
+        {
+          label: '🏠 Remote',
+          value: 'remote',
+        },
+        {
+          label: '🔄 Hybrid',
+          value: 'hybrid',
+        },
+        {
+          label: '✨ Flexible',
+          value: 'flexible',
+        },
+      ],
+      required: true,
+      defaultValue: 'office',
       admin: {
-        description: 'Is this a remote position?',
+        description: 'Work location type',
+      },
+    },
+    {
+      name: 'officeAddress',
+      type: 'textarea',
+      admin: {
+        description: 'Office address for walk-in/interviews (shown only for Office/Hybrid modes)',
+        condition: (data: any) => {
+          return data.workMode === 'office' || data.workMode === 'hybrid'
+        },
       },
     },
     {
@@ -192,6 +222,24 @@ export const Jobs: CollectionConfig = {
       },
     },
     {
+      name: 'experienceYearsMin',
+      type: 'number',
+      min: 0,
+      max: 50,
+      admin: {
+        description: 'Minimum years of experience required',
+      },
+    },
+    {
+      name: 'experienceYearsMax',
+      type: 'number',
+      min: 0,
+      max: 50,
+      admin: {
+        description: 'Maximum years of experience required',
+      },
+    },
+    {
       name: 'salaryMin',
       type: 'number',
       admin: {
@@ -236,7 +284,23 @@ export const Jobs: CollectionConfig = {
       type: 'richText',
       required: true,
       admin: {
-        description: 'Job requirements',
+        description: 'Job requirements and qualifications',
+      },
+    },
+    {
+      name: 'message',
+      type: 'richText',
+      admin: {
+        description:
+          'Optional message/note for applicants (e.g., interview process, timeline, special instructions)',
+      },
+    },
+    {
+      name: 'responsibilities',
+      type: 'richText',
+      required: true,
+      admin: {
+        description: 'Key job responsibilities and day-to-day tasks',
       },
     },
     {
@@ -249,12 +313,12 @@ export const Jobs: CollectionConfig = {
     {
       name: 'applyLink',
       type: 'text',
-      required: true,
+      required: false,
       admin: {
-        description: 'Application link or email',
+        description: 'Application link (optional if HR contact provided)',
       },
-      validate: (value) => {
-        if (!value) return 'Application link is required'
+      validate: (value: string | null | undefined) => {
+        if (!value) return true
         try {
           new URL(value)
           return true
@@ -269,10 +333,44 @@ export const Jobs: CollectionConfig = {
       admin: {
         description: 'Application email (optional)',
       },
-      validate: (value) => {
+      validate: (value: string | null | undefined) => {
         if (!value) return true
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         return emailRegex.test(value) || 'Please enter a valid email address'
+      },
+    },
+    {
+      name: 'acceptsReferrals',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Does this job accept employee referrals?',
+      },
+    },
+    {
+      name: 'hrContactName',
+      type: 'text',
+      admin: {
+        description: 'HR contact person name (optional)',
+      },
+    },
+    {
+      name: 'hrEmail',
+      type: 'text',
+      admin: {
+        description: 'HR contact email (optional)',
+      },
+      validate: (value: string | null | undefined) => {
+        if (!value) return true
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        return emailRegex.test(value) || 'Please enter a valid email address'
+      },
+    },
+    {
+      name: 'hrPhone',
+      type: 'text',
+      admin: {
+        description: 'HR contact phone number (optional)',
       },
     },
     {
@@ -365,9 +463,9 @@ export const Jobs: CollectionConfig = {
     {
       name: 'expiresAt',
       type: 'date',
-      required: true,
+      required: false,
       admin: {
-        description: 'Job expiry date',
+        description: 'Job expiry date (optional - leave empty for no expiry)',
       },
     },
     {
@@ -379,10 +477,41 @@ export const Jobs: CollectionConfig = {
         description: 'Date when job was posted',
       },
     },
+    {
+      name: 'notificationSent',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Has notification been sent for this job?',
+        readOnly: true,
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'notificationSentAt',
+      type: 'date',
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'notificationSentTo',
+      type: 'select',
+      options: [
+        { label: 'All Users', value: 'all' },
+        { label: 'Subscribed Only', value: 'subscribed' },
+        { label: 'Selected Users', value: 'selected' },
+      ],
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+      },
+    },
   ],
   hooks: {
     beforeChange: [
-      ({ data, operation }) => {
+      ({ data, operation }: any) => {
         if (operation === 'create' || operation === 'update') {
           if (data.title && !data.slug) {
             data.slug = data.title
@@ -396,23 +525,48 @@ export const Jobs: CollectionConfig = {
         return data
       },
     ],
+    afterChange: [
+      async ({ doc, operation, req, previousDoc }: any) => {
+        try {
+          // Check if this is a new job being created with isActive = true
+          const isNewActiveJob = operation === 'create' && doc.isActive
+
+          // Check if an existing job was just activated (previousDoc.isActive was false, now true)
+          const wasJustActivated =
+            operation === 'update' && doc.isActive && previousDoc && !previousDoc.isActive
+
+          // Send notification if it's a new active job or was just activated, and notification hasn't been sent yet
+          if ((isNewActiveJob || wasJustActivated) && !doc.notificationSent) {
+            console.log(`Triggering notification for job: ${doc.title} (ID: ${doc.id})`)
+            // Run notification in background to avoid blocking the save operation
+            setImmediate(async () => {
+              try {
+                await sendJobNotification(doc, req.payload)
+                console.log(`Notification sent successfully for job: ${doc.title}`)
+              } catch (error) {
+                console.error(`Failed to send notification for job ${doc.title}:`, error)
+              }
+            })
+          }
+        } catch (error) {
+          console.error('Error in afterChange hook:', error)
+          // Don't throw error to prevent blocking save operation
+        }
+
+        return doc
+      },
+    ],
   },
   access: {
     read: ({ req: { user } }) => {
       if (user?.roles?.includes('admin')) return true
       return {
-        and: [
-          {
-            isActive: {
-              equals: true,
-            },
-          },
-          {
-            expiresAt: {
-              greater_than: new Date(),
-            },
-          },
-        ],
+        isActive: {
+          equals: true,
+        },
+        expiresAt: {
+          greater_than: new Date(),
+        },
       }
     },
     create: ({ req: { user } }) => {

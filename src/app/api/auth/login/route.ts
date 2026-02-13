@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     if (!email || !password) {
       return NextResponse.json(
         { success: false, message: 'Email and password are required' },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     if (!emailRegex.test(email)) {
       return NextResponse.json(
         { success: false, message: 'Please enter a valid email address' },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -33,6 +33,32 @@ export async function POST(request: NextRequest) {
     const payload = await getPayload({ config })
 
     try {
+      // Find user by email first
+      const users = await payload.find({
+        collection: 'users',
+        where: { email: { equals: email.toLowerCase() } },
+      })
+
+      if (users.docs.length === 0) {
+        return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
+      }
+
+      const user = users.docs[0]
+
+      // Check if email is verified
+      if (!(user._verified as boolean)) {
+        return NextResponse.json(
+          {
+            error: 'Please verify your email before logging in.',
+            code: 'EMAIL_NOT_VERIFIED',
+            message:
+              'We sent a verification link to your email. Please check your inbox and spam folder.',
+            email: user.email,
+          },
+          { status: 403 },
+        )
+      }
+
       // Authenticate user
       const result = await payload.login({
         collection: 'users',
@@ -45,24 +71,15 @@ export async function POST(request: NextRequest) {
       if (!result.user || !result.token) {
         return NextResponse.json(
           { success: false, message: 'Invalid email or password' },
-          { status: 401 }
+          { status: 401 },
         )
       }
 
       // Set HTTP-only cookie
       const isProduction = process.env.NODE_ENV === 'production'
-      const cookieStore = cookies()
 
-      cookieStore.set('payload-token', result.token, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-        path: '/',
-      })
-
-      // Return user data
-      return NextResponse.json({
+      // Return user data with token
+      const response = NextResponse.json({
         success: true,
         user: {
           id: result.user.id,
@@ -73,18 +90,25 @@ export async function POST(request: NextRequest) {
           subscriptionPlan: result.user.subscriptionPlan,
         },
       })
+
+      response.cookies.set('payload-token', result.token, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        path: '/',
+      })
+
+      return response
     } catch (error) {
       console.error('Login error:', error)
       return NextResponse.json(
         { success: false, message: 'Invalid email or password' },
-        { status: 401 }
+        { status: 401 },
       )
     }
   } catch (error) {
     console.error('Login API error:', error)
-    return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 })
   }
 }

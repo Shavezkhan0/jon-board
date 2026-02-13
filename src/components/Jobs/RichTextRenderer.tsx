@@ -54,9 +54,11 @@ export default function RichTextRenderer({ content, className = '' }: RichTextRe
 
       // Handle text formatting
       if (textNode.format) {
-        if (textNode.format & 1) { // Bold
+        if (textNode.format & 1) {
+          // Bold
           Element = 'strong'
-        } else if (textNode.format & 2) { // Italic
+        } else if (textNode.format & 2) {
+          // Italic
           Element = 'em'
         }
       }
@@ -75,44 +77,48 @@ export default function RichTextRenderer({ content, className = '' }: RichTextRe
 
       // Map element tags to React components and Tailwind classes
       const tagMapping: Record<string, { component: string; className: string }> = {
-        'p': { component: 'p', className: 'mb-4 text-slate-700 leading-relaxed' },
-        'h1': { component: 'h1', className: 'text-3xl font-bold text-slate-900 mb-4 mt-6' },
-        'h2': { component: 'h2', className: 'text-2xl font-bold text-slate-900 mb-3 mt-5' },
-        'h3': { component: 'h3', className: 'text-xl font-bold text-slate-900 mb-2 mt-4' },
-        'h4': { component: 'h4', className: 'text-lg font-semibold text-slate-900 mb-2 mt-3' },
-        'h5': { component: 'h5', className: 'text-base font-semibold text-slate-900 mb-2 mt-3' },
-        'h6': { component: 'h6', className: 'text-sm font-semibold text-slate-900 mb-2 mt-3' },
-        'ul': { component: 'ul', className: 'list-disc list-inside mb-4 text-slate-700 space-y-1' },
-        'ol': { component: 'ol', className: 'list-decimal list-inside mb-4 text-slate-700 space-y-1' },
-        'li': { component: 'li', className: 'mb-1' },
-        'blockquote': { 
-          component: 'blockquote', 
-          className: 'border-l-4 border-indigo-500 pl-4 py-2 my-4 bg-slate-50 italic text-slate-700' 
+        p: { component: 'p', className: 'mb-4 text-slate-700 leading-relaxed' },
+        h1: { component: 'h1', className: 'text-3xl font-bold text-slate-900 mb-4 mt-6' },
+        h2: { component: 'h2', className: 'text-2xl font-bold text-slate-900 mb-3 mt-5' },
+        h3: { component: 'h3', className: 'text-xl font-bold text-slate-900 mb-2 mt-4' },
+        h4: { component: 'h4', className: 'text-lg font-semibold text-slate-900 mb-2 mt-3' },
+        h5: { component: 'h5', className: 'text-base font-semibold text-slate-900 mb-2 mt-3' },
+        h6: { component: 'h6', className: 'text-sm font-semibold text-slate-900 mb-2 mt-3' },
+        ul: { component: 'ul', className: 'list-disc list-inside mb-4 text-slate-700 space-y-1' },
+        ol: {
+          component: 'ol',
+          className: 'list-decimal list-inside mb-4 text-slate-700 space-y-1',
         },
-        'pre': { 
-          component: 'pre', 
-          className: 'bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto mb-4' 
+        li: { component: 'li', className: 'mb-1' },
+        blockquote: {
+          component: 'blockquote',
+          className:
+            'border-l-4 border-indigo-500 pl-4 py-2 my-4 bg-slate-50 italic text-slate-700',
         },
-        'code': { 
-          component: 'code', 
-          className: 'bg-slate-200 text-slate-800 px-1 py-0.5 rounded text-sm font-mono' 
+        pre: {
+          component: 'pre',
+          className: 'bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto mb-4',
         },
-        'a': { component: 'a', className: 'text-indigo-600 hover:text-indigo-800 underline' },
-        'strong': { component: 'strong', className: 'font-bold text-slate-900' },
-        'em': { component: 'em', className: 'italic text-slate-700' },
-        'u': { component: 'u', className: 'underline' },
-        's': { component: 's', className: 'line-through text-slate-500' },
-        'br': { component: 'br', className: '' },
-        'hr': { component: 'hr', className: 'border-slate-200 my-6' },
+        code: {
+          component: 'code',
+          className: 'bg-slate-200 text-slate-800 px-1 py-0.5 rounded text-sm font-mono',
+        },
+        a: { component: 'a', className: 'text-indigo-600 hover:text-indigo-800 underline' },
+        strong: { component: 'strong', className: 'font-bold text-slate-900' },
+        em: { component: 'em', className: 'italic text-slate-700' },
+        u: { component: 'u', className: 'underline' },
+        s: { component: 's', className: 'line-through text-slate-500' },
+        br: { component: 'br', className: '' },
+        hr: { component: 'hr', className: 'border-slate-200 my-6' },
       }
 
       const mapping = tagMapping[tag] || { component: 'div', className: '' }
       const Element = mapping.component
 
       // Build props for the element
-      const props: any = { 
-        key: index, 
-        className: mapping.className 
+      const props: any = {
+        key: index,
+        className: mapping.className,
       }
 
       // Handle links
@@ -130,7 +136,7 @@ export default function RichTextRenderer({ content, className = '' }: RichTextRe
       return React.createElement(
         Element,
         props,
-        children?.map((child, childIndex) => renderNode(child, childIndex))
+        children?.map((child, childIndex) => renderNode(child, childIndex)),
       )
     }
 
@@ -147,26 +153,30 @@ export default function RichTextRenderer({ content, className = '' }: RichTextRe
 // Helper function to parse style string to CSS object
 function parseStyleString(styleString: string): React.CSSProperties {
   const styles: React.CSSProperties = {}
-  
+
   if (!styleString) return styles
 
   styleString.split(';').forEach((style) => {
-    const [property, value] = style.split(':').map(s => s.trim())
+    const [property, value] = style.split(':').map((s) => s.trim())
     if (property && value) {
       // Convert CSS property to camelCase for React
-      const camelCaseProperty = property.replace(/-([a-z])/g, (match, letter) => 
-        letter.toUpperCase()
+      const camelCaseProperty = property.replace(/-([a-z])/g, (match, letter) =>
+        letter.toUpperCase(),
       )
-      
+
       // Convert CSS values to appropriate types
       if (property === 'color' || property === 'background-color') {
-        styles[camelCaseProperty as keyof React.CSSProperties] = value
-      } else if (property.includes('font-size') || property.includes('margin') || property.includes('padding')) {
+        ;(styles as any)[camelCaseProperty] = value
+      } else if (
+        property.includes('font-size') ||
+        property.includes('margin') ||
+        property.includes('padding')
+      ) {
         const numericValue = parseFloat(value)
         if (value.includes('px')) {
-          styles[camelCaseProperty as keyof React.CSSProperties] = numericValue
+          ;(styles as any)[camelCaseProperty] = numericValue
         } else if (value.includes('rem')) {
-          styles[camelCaseProperty as keyof React.CSSProperties] = numericValue * 16
+          ;(styles as any)[camelCaseProperty] = numericValue * 16
         }
       }
     }
@@ -182,17 +192,28 @@ export function isValidLexicalContent(content: any): content is LexicalRoot {
     typeof content === 'object' &&
     content.type === 'root' &&
     Array.isArray(content.children) &&
-    content.children.every((child: any) => 
-      child.type === 'text' || 
-      (child.type === 'element' && Array.isArray(child.children))
+    content.children.every(
+      (child: any) =>
+        child.type === 'text' || (child.type === 'element' && Array.isArray(child.children)),
     )
   )
 }
 
 // Fallback renderer for invalid or malformed content
-export function FallbackRenderer({ content, className = '' }: { content: any; className?: string }) {
+export function FallbackRenderer({
+  content,
+  className = '',
+}: {
+  content: any
+  className?: string
+}) {
   if (typeof content === 'string') {
-    return <div className={`text-slate-700 ${className}`} dangerouslySetInnerHTML={{ __html: content }} />
+    return (
+      <div
+        className={`text-slate-700 ${className}`}
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
+    )
   }
 
   if (Array.isArray(content)) {

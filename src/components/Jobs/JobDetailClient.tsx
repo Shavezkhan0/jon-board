@@ -19,10 +19,10 @@ interface JobDetailClientProps {
 const jobTypeColors = {
   'full-time': 'bg-blue-100 text-blue-800',
   'part-time': 'bg-yellow-100 text-yellow-800',
-  'remote': 'bg-green-100 text-green-800',
-  'freelance': 'bg-purple-100 text-purple-800',
-  'internship': 'bg-pink-100 text-pink-800',
-  'contract': 'bg-indigo-100 text-indigo-800',
+  remote: 'bg-green-100 text-green-800',
+  freelance: 'bg-purple-100 text-purple-800',
+  internship: 'bg-pink-100 text-pink-800',
+  contract: 'bg-indigo-100 text-indigo-800',
 }
 
 const experienceLevelColors = {
@@ -34,28 +34,28 @@ const experienceLevelColors = {
   manager: 'bg-red-100 text-red-800',
 }
 
-export default function JobDetailClient({ 
-  job, 
-  user, 
-  isSubscribed, 
-  isSaved, 
-  relatedJobs 
+export default function JobDetailClient({
+  job,
+  user,
+  isSubscribed,
+  isSaved,
+  relatedJobs,
 }: JobDetailClientProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isSaving, setIsSaving] = useState(false)
 
   const formatSalary = (min?: number, max?: number) => {
-    if (!min && !max) return 'Competitive'
     if (min && max) return `₹${min.toLocaleString()} - ₹${max.toLocaleString()}`
     if (min) return `₹${min.toLocaleString()}+`
-    return `Up to ₹${max.toLocaleString()}`
+    if (max) return `Up to ₹${max.toLocaleString()}`
+    return 'Competitive'
   }
 
   const getCompanyInitials = (company: string) => {
     return company
       .split(' ')
-      .map(word => word[0])
+      .map((word) => word[0])
       .join('')
       .toUpperCase()
       .slice(0, 2)
@@ -72,7 +72,7 @@ export default function JobDetailClient({
     try {
       const method = isSaved ? 'DELETE' : 'POST'
       const url = isSaved ? `/api/jobs/save?jobId=${job.id}` : '/api/jobs/save'
-      
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -98,7 +98,7 @@ export default function JobDetailClient({
 
   const handleShareJob = async () => {
     const url = window.location.href
-    
+
     try {
       if (navigator.share) {
         await navigator.share({
@@ -122,9 +122,13 @@ export default function JobDetailClient({
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <nav className="flex items-center space-x-2 text-sm">
-            <Link href="/" className="text-slate-500 hover:text-slate-700">Home</Link>
+            <Link href="/" className="text-slate-500 hover:text-slate-700">
+              Home
+            </Link>
             <span className="text-slate-400">/</span>
-            <Link href="/jobs" className="text-slate-500 hover:text-slate-700">Jobs</Link>
+            <Link href="/jobs" className="text-slate-500 hover:text-slate-700">
+              Jobs
+            </Link>
             <span className="text-slate-400">/</span>
             <span className="text-slate-900 font-medium truncate max-w-xs sm:max-w-none">
               {job.title}
@@ -156,9 +160,24 @@ export default function JobDetailClient({
                     <h1 className="text-3xl font-bold text-slate-900 mb-1">{job.title}</h1>
                     <h2 className="text-xl text-slate-700 mb-2">{job.company}</h2>
                     <div className="flex items-center text-slate-600">
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <svg
+                        className="w-4 h-4 mr-1"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
                       </svg>
                       <span>{job.location}</span>
                       {job.companyWebsite && (
@@ -189,17 +208,37 @@ export default function JobDetailClient({
                         : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                     } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    <svg className="w-5 h-5 mr-2" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    <svg
+                      className="w-5 h-5 mr-2"
+                      fill={isSaved ? 'currentColor' : 'none'}
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                      />
                     </svg>
-                    {isSaving ? 'Saving...' : (isSaved ? 'Saved' : 'Save Job')}
+                    {isSaving ? 'Saving...' : isSaved ? 'Saved' : 'Save Job'}
                   </button>
                   <button
                     onClick={handleShareJob}
                     className="flex items-center justify-center px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors duration-200"
                   >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a9.001 9.001 0 01-7.432 0m9.432-1.342A9.001 9.001 0 0112 3c-4.474 0-8.268 2.943-9.432 7m18.864 0A9.001 9.001 0 0112 21c-4.474 0-8.268-2.943-9.432-7" />
+                    <svg
+                      className="w-5 h-5 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a9.001 9.001 0 01-7.432 0m9.432-1.342A9.001 9.001 0 0112 3c-4.474 0-8.268 2.943-9.432 7m18.864 0A9.001 9.001 0 0112 21c-4.474 0-8.268-2.943-9.432-7"
+                      />
                     </svg>
                     Share
                   </button>
@@ -218,37 +257,42 @@ export default function JobDetailClient({
                     🔥 Urgent
                   </span>
                 )}
-                {job.isRemote && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                    🌍 Remote
-                  </span>
-                )}
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${jobTypeColors[job.jobType]}`}>
-                  {job.jobType.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                <span
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${jobTypeColors[job.jobType]}`}
+                >
+                  {job.jobType.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
                 </span>
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${experienceLevelColors[job.experienceLevel]}`}>
-                  {job.experienceLevel.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                <span
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${experienceLevelColors[job.experienceLevel]}`}
+                >
+                  {job.experienceLevel.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
                 </span>
               </div>
 
               {/* Posted and Expiry Info */}
               <div className="flex items-center justify-between mt-6 pt-6 border-t border-slate-200 text-sm text-slate-600">
                 <div>
-                  Posted: <span className="font-medium text-slate-900">
-                    {new Date(job.postedAt).toLocaleDateString('en-US', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
+                  Posted:{' '}
+                  <span className="font-medium text-slate-900">
+                    {job.postedAt
+                      ? new Date(job.postedAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })
+                      : 'N/A'}
                   </span>
                 </div>
                 <div>
-                  Expires: <span className="font-medium text-slate-900">
-                    {new Date(job.expiresAt).toLocaleDateString('en-US', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
+                  Expires:{' '}
+                  <span className="font-medium text-slate-900">
+                    {job.expiresAt
+                      ? new Date(job.expiresAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })
+                      : 'N/A'}
                   </span>
                 </div>
               </div>
@@ -298,8 +342,18 @@ export default function JobDetailClient({
                 <ul className="space-y-2">
                   {job.benefits.map((benefit, index) => (
                     <li key={index} className="flex items-start">
-                      <svg className="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      <svg
+                        className="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
                       </svg>
                       <span className="text-slate-700">{benefit.benefit}</span>
                     </li>
@@ -334,7 +388,7 @@ export default function JobDetailClient({
               <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg p-6 text-white">
                 <h3 className="text-sm font-medium text-indigo-100 mb-2">Salary Range</h3>
                 <div className="text-3xl font-bold mb-2">
-                  {formatSalary(job.salaryMin, job.salaryMax)}
+                  {formatSalary(job.salaryMin ?? undefined, job.salaryMax ?? undefined)}
                 </div>
                 {job.salaryCurrency === 'USD' && (
                   <div className="text-sm text-indigo-100">United States Dollar</div>
@@ -344,14 +398,14 @@ export default function JobDetailClient({
               {/* Apply Actions */}
               <div className="bg-white rounded-lg border border-slate-200 p-6">
                 <a
-                  href={job.applyLink}
+                  href={job.applyLink || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 transition-colors duration-200 text-center mb-3"
                 >
                   Apply Now
                 </a>
-                
+
                 {job.applyEmail && (
                   <a
                     href={`mailto:${job.applyEmail}?subject=Application for ${job.title} at ${job.company}`}
@@ -369,13 +423,15 @@ export default function JobDetailClient({
                   <div>
                     <dt className="text-sm font-medium text-slate-500">Job Type</dt>
                     <dd className="text-sm text-slate-900">
-                      {job.jobType.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      {job.jobType.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-slate-500">Experience Level</dt>
                     <dd className="text-sm text-slate-900">
-                      {job.experienceLevel.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      {job.experienceLevel
+                        .replace('-', ' ')
+                        .replace(/\b\w/g, (l) => l.toUpperCase())}
                     </dd>
                   </div>
                   <div>
@@ -389,21 +445,25 @@ export default function JobDetailClient({
                   <div>
                     <dt className="text-sm font-medium text-slate-500">Posted</dt>
                     <dd className="text-sm text-slate-900">
-                      {new Date(job.postedAt).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}
+                      {job.postedAt
+                        ? new Date(job.postedAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })
+                        : 'N/A'}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-slate-500">Expires</dt>
                     <dd className="text-sm text-slate-900">
-                      {new Date(job.expiresAt).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}
+                      {job.expiresAt
+                        ? new Date(job.expiresAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })
+                        : 'N/A'}
                     </dd>
                   </div>
                 </dl>

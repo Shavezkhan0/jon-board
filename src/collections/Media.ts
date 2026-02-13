@@ -28,7 +28,6 @@ export const Media: CollectionConfig = {
     },
   ],
   upload: {
-    staticURL: '/media',
     staticDir: 'public/media',
     imageSizes: [
       {
@@ -51,6 +50,5 @@ export const Media: CollectionConfig = {
       },
     ],
     mimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'],
-    fileSize: 2000000, // 2MB
   },
 }

@@ -16,29 +16,23 @@ interface ValidationError {
 export async function PUT(request: NextRequest) {
   try {
     // Authenticate user from cookie
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const token = cookieStore.get('payload-token')?.value
 
     if (!token) {
-      return NextResponse.json(
-        { success: false, message: 'Not authenticated' },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
     }
 
     const payload = await getPayload({ config })
 
     try {
-      const { user } = await payload.verifyToken({
+      const { user } = await (payload as any).verifyToken({
         collection: 'users',
         token,
       })
 
       if (!user) {
-        return NextResponse.json(
-          { success: false, message: 'Invalid token' },
-          { status: 401 }
-        )
+        return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
       }
 
       const body: ChangePasswordRequest = await request.json()
@@ -67,10 +61,7 @@ export async function PUT(request: NextRequest) {
       }
 
       if (errors.length > 0) {
-        return NextResponse.json(
-          { success: false, errors },
-          { status: 400 }
-        )
+        return NextResponse.json({ success: false, errors }, { status: 400 })
       }
 
       // Verify current password
@@ -85,7 +76,7 @@ export async function PUT(request: NextRequest) {
       } catch (loginError) {
         return NextResponse.json(
           { success: false, message: 'Current password is incorrect' },
-          { status: 401 }
+          { status: 401 },
         )
       }
 
@@ -107,21 +98,15 @@ export async function PUT(request: NextRequest) {
         console.error('Password update error:', updateError)
         return NextResponse.json(
           { success: false, message: 'Failed to update password' },
-          { status: 500 }
+          { status: 500 },
         )
       }
     } catch (tokenError) {
       console.error('Token verification error:', tokenError)
-      return NextResponse.json(
-        { success: false, message: 'Invalid token' },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 })
     }
   } catch (error) {
     console.error('Change password error:', error)
-    return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 })
   }
 }
