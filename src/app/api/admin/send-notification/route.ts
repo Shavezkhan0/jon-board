@@ -149,13 +149,13 @@ export async function POST(request: NextRequest) {
                 targetUser.email,
                 targetUser.fullName || targetUser.email,
                 {
-                  title: jobDetails.title,
-                  company: jobDetails.company,
-                  location: jobDetails.location,
-                  jobType: jobDetails.jobType,
-                  slug: jobDetails.slug,
-                  salaryMin: jobDetails.salaryMin,
-                  salaryMax: jobDetails.salaryMax,
+                  title: jobDetails.title || '',
+                  company: jobDetails.company || '',
+                  location: jobDetails.location || '',
+                  jobType: jobDetails.jobType || '',
+                  slug: jobDetails.slug || '',
+                  salaryMin: jobDetails.salaryMin ?? undefined,
+                  salaryMax: jobDetails.salaryMax ?? undefined,
                 },
               )
             } else {

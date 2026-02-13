@@ -133,13 +133,13 @@ export default function NotificationBell() {
       },
     }
 
-    const iconConfig = iconMap[type as keyof typeof iconMap] || iconMap.general
+    const IconComponent = iconMap[type as keyof typeof iconMap]?.icon || iconMap.general.icon
 
     return (
       <div
-        className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${iconConfig.bgColor} ${iconConfig.textColor}`}
+        className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${iconMap[type as keyof typeof iconMap]?.bgColor || iconMap.general.bgColor} ${iconMap[type as keyof typeof iconMap]?.textColor || iconMap.general.textColor}`}
       >
-        {iconConfig.icon}
+        <IconComponent className="w-5 h-5" />
       </div>
     )
   }, [])

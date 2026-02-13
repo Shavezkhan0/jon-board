@@ -158,7 +158,7 @@ export default function NotifyPage() {
       }
     } catch (error) {
       console.error('Failed to send notification:', error)
-      setResult({ success: false, message: error.message })
+      setResult({ success: false, message: error instanceof Error ? error.message : 'Unknown error' })
     } finally {
       setSendEmail(false)
     }
@@ -296,7 +296,7 @@ export default function NotifyPage() {
                           name="recipient"
                           value={option}
                           checked={recipient === option}
-                          onChange={(e) => setRecipient(e.target.value)}
+                          onChange={(e) => setRecipient(e.target.value as 'all' | 'subscribed' | 'selected')}
                           className="sr-only"
                         />
                         <label
@@ -473,7 +473,6 @@ export default function NotifyPage() {
                       <Mail className={`absolute top-1/2 left-1/2 w-5 h-5 text-slate-600 transition-transform ${sendEmail ? 'translate-x-0' : 'translate-x-6'}`}></Mail>
                     </div>
                     <span className="ml-3 text-sm font-medium">{sendEmail ? 'Also send email via Resend' : 'Notification only'}</span>
-                  </div>
                   </label>
                 </div>
 
@@ -547,7 +546,6 @@ export default function NotifyPage() {
                     <div className="flex items-center space-x-2 mb-2">
                       <span className="text-xs text-slate-500">To:</span>
                       <span className="text-xs text-slate-700">{recipient === 'all' ? 'All Users' : recipient === 'subscribed' ? 'Subscribed Users Only' : `${selectedEmails.length} Selected Users`}</span>
-                    </span>
                       {sendEmail && (
                         <span className="text-xs text-slate-500">+ Email</span>
                       )}

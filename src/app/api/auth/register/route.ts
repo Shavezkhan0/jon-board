@@ -86,11 +86,13 @@ export async function POST(request: NextRequest) {
     try {
       const user = await payload.create({
         collection: 'users',
+        draft: false,
         data: {
           email: email.toLowerCase(),
           password,
           fullName: fullName.trim(),
           phone: phone || undefined,
+          roles: ['user'],
           subscriptionStatus: 'none',
         },
       })

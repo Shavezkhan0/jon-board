@@ -96,7 +96,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
   }
 
   // Check if job is active and not expired
-  if (!job.isActive || new Date(job.expiresAt) < new Date()) {
+  if (!job.isActive || (job.expiresAt && new Date(job.expiresAt) < new Date())) {
     notFound()
   }
 

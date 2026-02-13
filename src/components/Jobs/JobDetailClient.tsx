@@ -257,11 +257,6 @@ export default function JobDetailClient({
                     🔥 Urgent
                   </span>
                 )}
-                {job.isRemote && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                    🌍 Remote
-                  </span>
-                )}
                 <span
                   className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${jobTypeColors[job.jobType]}`}
                 >
@@ -279,21 +274,25 @@ export default function JobDetailClient({
                 <div>
                   Posted:{' '}
                   <span className="font-medium text-slate-900">
-                    {new Date(job.postedAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
+                    {job.postedAt
+                      ? new Date(job.postedAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })
+                      : 'N/A'}
                   </span>
                 </div>
                 <div>
                   Expires:{' '}
                   <span className="font-medium text-slate-900">
-                    {new Date(job.expiresAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
+                    {job.expiresAt
+                      ? new Date(job.expiresAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })
+                      : 'N/A'}
                   </span>
                 </div>
               </div>
@@ -389,7 +388,7 @@ export default function JobDetailClient({
               <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg p-6 text-white">
                 <h3 className="text-sm font-medium text-indigo-100 mb-2">Salary Range</h3>
                 <div className="text-3xl font-bold mb-2">
-                  {formatSalary(job.salaryMin, job.salaryMax)}
+                  {formatSalary(job.salaryMin ?? undefined, job.salaryMax ?? undefined)}
                 </div>
                 {job.salaryCurrency === 'USD' && (
                   <div className="text-sm text-indigo-100">United States Dollar</div>
@@ -399,7 +398,7 @@ export default function JobDetailClient({
               {/* Apply Actions */}
               <div className="bg-white rounded-lg border border-slate-200 p-6">
                 <a
-                  href={job.applyLink}
+                  href={job.applyLink || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 transition-colors duration-200 text-center mb-3"
@@ -446,21 +445,25 @@ export default function JobDetailClient({
                   <div>
                     <dt className="text-sm font-medium text-slate-500">Posted</dt>
                     <dd className="text-sm text-slate-900">
-                      {new Date(job.postedAt).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
+                      {job.postedAt
+                        ? new Date(job.postedAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })
+                        : 'N/A'}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-slate-500">Expires</dt>
                     <dd className="text-sm text-slate-900">
-                      {new Date(job.expiresAt).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
+                      {job.expiresAt
+                        ? new Date(job.expiresAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })
+                        : 'N/A'}
                     </dd>
                   </div>
                 </dl>

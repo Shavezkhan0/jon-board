@@ -58,7 +58,7 @@ export default function JobCard({ job, isSaved, onSaveToggle, isSubscribed }: Jo
       .slice(0, 2)
   }
 
-  const isExpired = new Date(job.expiresAt) < new Date()
+  const isExpired = job.expiresAt ? new Date(job.expiresAt) < new Date() : false
 
   return (
     <div className="group relative bg-white rounded-lg border border-slate-200 hover:border-indigo-300 hover:shadow-lg transition-all duration-200 overflow-hidden">
@@ -192,7 +192,7 @@ export default function JobCard({ job, isSaved, onSaveToggle, isSubscribed }: Jo
 
         {/* Salary */}
         <div className="text-lg font-semibold text-slate-900 mb-3">
-          {formatSalary(job.salaryMin, job.salaryMax)}
+          {formatSalary(job.salaryMin ?? undefined, job.salaryMax ?? undefined)}
           {job.salaryCurrency === 'USD' && ' USD'}
         </div>
 
@@ -217,7 +217,7 @@ export default function JobCard({ job, isSaved, onSaveToggle, isSubscribed }: Jo
 
         {/* Posted Time */}
         <div className="flex items-center justify-between text-xs text-slate-500">
-          <span>Posted {formatPostedDate(job.postedAt)}</span>
+          <span>Posted {formatPostedDate(job.postedAt || '')}</span>
           {isExpired && <span className="text-red-600 font-medium">Expired</span>}
         </div>
       </Link>

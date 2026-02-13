@@ -858,12 +858,15 @@ async function seedDatabase() {
       try {
         await payload.create({
           collection: 'jobs',
+          draft: false,
           data: {
             ...jobData,
             slug: `${jobData.title.toLowerCase().replace(/\s+/g, '-')}-${Math.random().toString(36).substr(2, 9)}`,
             isActive: true,
             viewCount: Math.floor(Math.random() * 1000),
             applicationCount: Math.floor(Math.random() * 50),
+            workMode: 'office',
+            responsibilities: jobData.description?.slice(0, 500) || '',
           },
           overrideAccess: false,
         })

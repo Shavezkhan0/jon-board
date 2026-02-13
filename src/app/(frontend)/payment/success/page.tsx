@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import PaymentSuccessClient from './PaymentSuccessClient'
 
 export async function generateMetadata() {
@@ -13,7 +14,9 @@ export async function generateMetadata() {
 export default function PaymentSuccessPage() {
   return (
     <div className="relative">
-      <PaymentSuccessClient />
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+        <PaymentSuccessClient />
+      </Suspense>
     </div>
   )
 }

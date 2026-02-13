@@ -4,7 +4,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getCurrentUser } from '@/lib/auth'
 import { PLANS, PlanType, addDays } from '@/lib/razorpay'
-import { sendSubscriptionConfirmationEmail } from '@/lib/email'
+import { sendSubscriptionConfirmation as sendSubscriptionConfirmationEmail } from '@/lib/email'
 
 interface VerifyPaymentRequest {
   razorpay_order_id: string
@@ -101,13 +101,12 @@ export async function POST(request: NextRequest) {
 
       // Send confirmation email
       try {
-        await sendSubscriptionConfirmationEmail({
-          email: user.email,
-          fullName: user.fullName,
-          plan: planDetails.name,
-          amount: planDetails.amount,
+        await sendSubscriptionConfirmationEmail(
+          user.email,
+          user.fullName || user.email,
+          planDetails.name,
           expiresAt,
-        })
+        )
       } catch (emailError) {
         console.error('Failed to send confirmation email:', emailError)
         // Don't fail the request if email fails
