@@ -564,9 +564,23 @@ export const Jobs: CollectionConfig = {
         isActive: {
           equals: true,
         },
-        expiresAt: {
-          greater_than: new Date(),
-        },
+        or: [
+          {
+            expiresAt: {
+              exists: false,
+            },
+          },
+          {
+            expiresAt: {
+              equals: null,
+            },
+          },
+          {
+            expiresAt: {
+              greater_than: new Date(),
+            },
+          },
+        ],
       }
     },
     create: ({ req: { user } }) => {
