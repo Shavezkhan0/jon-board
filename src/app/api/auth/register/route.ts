@@ -92,13 +92,14 @@ export async function POST(request: NextRequest) {
       // Continue anyway - the check failed but we can try to create
     }
 
-    // Create user
+    // Create user - disable verification email temporarily for debugging
     try {
       console.log(`[${requestId}] Creating user...`)
 
       const user = await payload.create({
         collection: 'users',
         draft: false,
+        overrideAccess: true, // Bypass access control
         data: {
           email: email.toLowerCase(),
           password,
@@ -106,6 +107,7 @@ export async function POST(request: NextRequest) {
           phone: phone || undefined,
           roles: ['user'],
           subscriptionStatus: 'none',
+          _verified: true, // Skip email verification temporarily
         },
       })
 
@@ -113,36 +115,42 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        code: 'VERIFY_EMAIL',
-        message:
-          'Account created! Please check your email to verify your account before logging in.',
+        message: 'Account created successfully! You can now login.',
         email: user.email,
       })
     } catch (createError: any) {
-      console.error(`[${requestId}] Error creating user:`, createError?.message || createError)
-      console.error(`[${requestId}] Stack:`, createError?.stack)
+      console.error(`[${requestId}] Error creating user:`, createError)
+      console.error(
+        `[${requestId}] Full error:`,
+        JSON.stringify(createError, Object.getOwnPropertyNames(createError)),
+      )
+
+      // Show actual error for debugging
+      const errorMessage = createError?.message || createError?.toString() || 'Unknown error'
 
       return NextResponse.json(
         {
           success: false,
-          message: createError?.message?.includes('duplicate')
-            ? 'Email already exists'
-            : 'Failed to create user. Please try again.',
+          message: errorMessage,
+          debug: process.env.NODE_ENV === 'development' ? createError?.stack : undefined,
         },
         { status: 500 },
       )
     }
   } catch (error: any) {
-    console.error(`[${requestId}] Registration error:`, error?.message || error)
-    console.error(`[${requestId}] Stack:`, error?.stack)
+    console.error(`[${requestId}] Registration error:`, error)
+    console.error(
+      `[${requestId}] Full error:`,
+      JSON.stringify(error, Object.getOwnPropertyNames(error)),
+    )
+
+    const errorMessage = error?.message || error?.toString() || 'Unknown error'
 
     return NextResponse.json(
       {
         success: false,
-        message:
-          process.env.NODE_ENV === 'development'
-            ? `Internal server error: ${error?.message}`
-            : 'Internal server error',
+        message: errorMessage,
+        debug: process.env.NODE_ENV === 'development' ? error?.stack : undefined,
       },
       { status: 500 },
     )
