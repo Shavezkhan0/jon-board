@@ -117,9 +117,7 @@ export default function LoginPage() {
           setMessage('Login successful! Redirecting...')
           setMessageType('success')
           localStorage.setItem('user', JSON.stringify(data.user))
-          setTimeout(() => {
-            router.push('/dashboard')
-          }, 1500)
+          window.location.href = '/dashboard'
         } else {
           if (data.code === 'VERIFY_EMAIL') {
             setRegisteredEmail(data.email)
