@@ -9,8 +9,13 @@ interface JobDetailPageProps {
   }>
 }
 
+function getBaseUrl() {
+  const url = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  return url.startsWith('http') ? url : `https://${url}`
+}
+
 async function getJob(slug: string): Promise<Job | null> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const baseUrl = getBaseUrl()
 
   try {
     const response = await fetch(`${baseUrl}/api/jobs?where[slug][equals]=${slug}&depth=1`, {
@@ -30,7 +35,7 @@ async function getJob(slug: string): Promise<Job | null> {
 }
 
 async function getRelatedJobs(category: string, currentJobId: string): Promise<Job[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const baseUrl = getBaseUrl()
 
   try {
     const where = {
@@ -58,7 +63,7 @@ async function getRelatedJobs(category: string, currentJobId: string): Promise<J
 }
 
 async function incrementViewCount(jobId: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const baseUrl = getBaseUrl()
 
   try {
     await fetch(`${baseUrl}/api/jobs/${jobId}/view`, {
@@ -110,7 +115,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
   let isSaved = false
   if (user) {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      const baseUrl = getBaseUrl()
       const savedJobsResponse = await fetch(`${baseUrl}/api/jobs/saved`, {
         cache: 'no-store',
         credentials: 'include',
@@ -141,6 +146,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
 
 export async function generateMetadata({ params }: JobDetailPageProps) {
   const { slug } = await params
+  const baseUrl = getBaseUrl()
   const job = await getJob(slug)
 
   if (!job) {
@@ -170,7 +176,7 @@ export async function generateMetadata({ params }: JobDetailPageProps) {
       title,
       description,
       type: 'article',
-      url: `${process.env.NEXT_PUBLIC_APP_URL}/jobs/${job.slug}`,
+      url: `${baseUrl}/jobs/${job.slug}`,
       images: job.companyLogo ? [job.companyLogo.url] : [],
     },
     twitter: {
@@ -180,7 +186,7 @@ export async function generateMetadata({ params }: JobDetailPageProps) {
       images: job.companyLogo ? [job.companyLogo.url] : [],
     },
     alternates: {
-      canonical: `${process.env.NEXT_PUBLIC_APP_URL}/jobs/${job.slug}`,
+      canonical: `${baseUrl}/jobs/${job.slug}`,
     },
   }
 }

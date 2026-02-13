@@ -2,6 +2,11 @@ import { getCurrentUser, isSubscriptionActive } from '@/lib/auth'
 import { JobFilters, JobsResponse, User } from '@/types'
 import JobsPageClient from '@/components/Jobs/JobsPageClient'
 
+function getBaseUrl() {
+  const url = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  return url.startsWith('http') ? url : `https://${url}`
+}
+
 interface JobsPageProps {
   searchParams: {
     search?: string
@@ -80,7 +85,7 @@ async function fetchJobs(searchParams: JobsPageProps['searchParams']): Promise<J
   const where = buildWhereQuery(searchParams)
   const sort = buildSortQuery(searchParams.sort)
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const baseUrl = getBaseUrl()
   const queryString = new URLSearchParams({
     where: JSON.stringify(where),
     sort,
@@ -141,7 +146,7 @@ export default async function JobsPage(props: {
   let savedJobIds: string[] = []
   if (user) {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      const baseUrl = getBaseUrl()
       const savedJobsResponse = await fetch(`${baseUrl}/api/jobs/saved`, {
         cache: 'no-store',
         credentials: 'include',

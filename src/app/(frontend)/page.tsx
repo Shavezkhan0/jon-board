@@ -15,9 +15,14 @@ interface Category {
   count: number
 }
 
+function getBaseUrl() {
+  const url = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  return url.startsWith('http') ? url : `https://${url}`
+}
+
 async function getFeaturedJobs(): Promise<Job[]> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/jobs?where[isFeatured][equals]=true&limit=6`, {
+    const response = await fetch(`${getBaseUrl()}/api/jobs?where[isFeatured][equals]=true&limit=6`, {
       cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
@@ -38,7 +43,7 @@ async function getFeaturedJobs(): Promise<Job[]> {
 
 async function getTotalJobsCount(): Promise<number> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/jobs?limit=1`, {
+    const response = await fetch(`${getBaseUrl()}/api/jobs?limit=1`, {
       cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
@@ -60,7 +65,7 @@ async function getTotalJobsCount(): Promise<number> {
 async function getCategoriesWithCounts(): Promise<Category[]> {
   try {
     // Get all jobs to count by category
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/jobs?limit=1000`, {
+    const response = await fetch(`${getBaseUrl()}/api/jobs?limit=1000`, {
       cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',

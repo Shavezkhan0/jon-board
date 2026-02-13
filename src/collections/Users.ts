@@ -1,11 +1,15 @@
 import type { CollectionConfig } from 'payload'
 
+const getAppUrl = () => {
+  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+}
+
 export const Users: CollectionConfig = {
   slug: 'users',
   auth: {
     verify: {
       generateEmailHTML: ({ token, user }) => {
-        const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${token}`
+        const verifyUrl = `${getAppUrl()}/verify-email?token=${token}`
         return `
           <div style="font-family: Arial, sans-serif; background-color: #0f172a; padding: 40px 20px;">
             <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 12px; padding: 40px;">

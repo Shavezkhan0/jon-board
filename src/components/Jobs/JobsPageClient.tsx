@@ -16,6 +16,11 @@ import {
 } from '@/types'
 import { useToast } from '@/components/ui/Toast'
 
+function getBaseUrl() {
+  const url = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  return url.startsWith('http') ? url : `https://${url}`
+}
+
 // Constants for filters
 const JOB_TYPES: JobTypeOption[] = [
   { value: 'full-time', label: 'Full-Time', color: 'bg-blue-100 text-blue-800' },
@@ -113,7 +118,7 @@ export default function JobsPageClient({
     setIsLoading(true)
 
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      const baseUrl = getBaseUrl()
 
       // Build where query
       const where: any = {

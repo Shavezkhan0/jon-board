@@ -3,6 +3,11 @@ import { cookies } from 'next/headers'
 import DashboardClient from './DashboardClient'
 import { User, SubscriptionResponse } from '@/types'
 
+function getBaseUrl() {
+  const url = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  return url.startsWith('http') ? url : `https://${url}`
+}
+
 async function getCurrentUser(): Promise<User | null> {
   try {
     const cookieStore = await cookies()
@@ -12,7 +17,7 @@ async function getCurrentUser(): Promise<User | null> {
       return null
     }
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/auth/me`, {
+    const response = await fetch(`${getBaseUrl()}/api/auth/me`, {
       cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
@@ -37,7 +42,7 @@ async function getSubscriptionStatus(): Promise<SubscriptionResponse> {
     const cookieStore = await cookies()
     const token = cookieStore.get('payload-token')?.value
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/payment/status`, {
+    const response = await fetch(`${getBaseUrl()}/api/payment/status`, {
       cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
@@ -74,7 +79,7 @@ async function getSavedJobsCount(): Promise<number> {
     const cookieStore = await cookies()
     const token = cookieStore.get('payload-token')?.value
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/jobs/saved`, {
+    const response = await fetch(`${getBaseUrl()}/api/jobs/saved`, {
       cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
