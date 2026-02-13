@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { User } from '@/types'
+import { useToast } from '@/components/ui/Toast'
 
 interface ProfilePanelProps {
   user: User
@@ -33,7 +34,7 @@ export default function ProfilePanel({ user }: ProfilePanelProps) {
     (typeof user.profilePhoto !== 'string' && user.profilePhoto?.url) || '',
   )
   const [newSkill, setNewSkill] = useState('')
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const { toast } = useToast()
 
   const [formData, setFormData] = useState<ProfileFormData>({
     fullName: user.fullName || '',
@@ -103,38 +104,51 @@ export default function ProfilePanel({ user }: ProfilePanelProps) {
     }))
   }
 
-  const handleSaveSection = async (section: keyof ProfileFormData) => {
+  const handleSaveSection = async (section: 'personal' | 'professional' | 'skills') => {
     try {
-      const sectionData = { [section]: formData[section] }
+      const sectionData: any = {}
 
-      const response = await fetch('/api/auth/profile', {
-        method: 'PATCH',
+      if (section === 'personal') {
+        sectionData.fullName = formData.fullName
+        sectionData.phone = formData.phone
+        sectionData.bio = formData.bio
+      } else if (section === 'professional') {
+        sectionData.currentJobTitle = formData.currentJobTitle
+        sectionData.linkedinUrl = formData.linkedinUrl
+        sectionData.resumeUrl = formData.resumeUrl
+      } else if (section === 'skills') {
+        sectionData.skills = formData.skills.map((skill: string) => ({ skill }))
+      }
+
+      const response = await fetch('/api/auth/update-profile', {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(sectionData),
       })
 
+      const data = await response.json()
+
       if (!response.ok) {
-        throw new Error('Failed to update profile')
+        throw new Error(data.message || 'Failed to update profile')
       }
 
-      setMessage({ type: 'success', text: 'Profile updated successfully!' })
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to update profile. Please try again.' })
+      toast('Profile updated successfully!', 'success')
+    } catch (error: any) {
+      console.error('Error updating profile:', error)
+      toast(error.message || 'Failed to update profile. Please try again.', 'error')
     }
-
-    setTimeout(() => setMessage(null), 3000)
   }
 
   const handlePasswordChange = async () => {
     if (passwordData.newPassword !== passwordData.confirmNewPassword) {
-      setMessage({ type: 'error', text: 'New passwords do not match' })
+      toast('New passwords do not match', 'error')
       return
     }
 
     if (passwordData.newPassword.length < 8) {
-      setMessage({ type: 'error', text: 'Password must be at least 8 characters' })
+      toast('Password must be at least 8 characters', 'error')
       return
     }
 
@@ -154,17 +168,16 @@ export default function ProfilePanel({ user }: ProfilePanelProps) {
         throw new Error('Failed to change password')
       }
 
-      setMessage({ type: 'success', text: 'Password changed successfully!' })
+      toast('Password changed successfully!', 'success')
       setShowPasswordModal(false)
       setPasswordData({ currentPassword: '', newPassword: '', confirmNewPassword: '' })
-    } catch (error) {
-      setMessage({
-        type: 'error',
-        text: 'Failed to change password. Please check your current password.',
-      })
+    } catch (error: any) {
+      console.error('Error changing password:', error)
+      toast(
+        error.message || 'Failed to change password. Please check your current password.',
+        'error',
+      )
     }
-
-    setTimeout(() => setMessage(null), 3000)
   }
 
   return (
@@ -194,19 +207,6 @@ export default function ProfilePanel({ user }: ProfilePanelProps) {
             Complete your profile to increase visibility to recruiters
           </p>
         </div>
-
-        {/* Message */}
-        {message && (
-          <div
-            className={`p-4 rounded-lg ${
-              message.type === 'success'
-                ? 'bg-green-50 text-green-800 border border-green-200'
-                : 'bg-red-50 text-red-800 border border-red-200'
-            }`}
-          >
-            {message.text}
-          </div>
-        )}
 
         {/* Profile Photo */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
@@ -323,7 +323,7 @@ export default function ProfilePanel({ user }: ProfilePanelProps) {
                 </div>
                 <div className="flex justify-end">
                   <button
-                    onClick={() => handleSaveSection('fullName')}
+                    onClick={() => handleSaveSection('personal')}
                     className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
                   >
                     Save Personal Info
@@ -375,7 +375,7 @@ export default function ProfilePanel({ user }: ProfilePanelProps) {
                 </div>
                 <div className="flex justify-end">
                   <button
-                    onClick={() => handleSaveSection('currentJobTitle')}
+                    onClick={() => handleSaveSection('professional')}
                     className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
                   >
                     Save Professional Info

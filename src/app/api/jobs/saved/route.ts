@@ -8,10 +8,7 @@ export async function GET(request: NextRequest) {
     // Get current user
     const user = await getCurrentUser()
     if (!user) {
-      return NextResponse.json(
-        { success: false, message: 'Not authenticated' },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
     }
 
     const payload = await getPayload({ config })
@@ -31,9 +28,9 @@ export async function GET(request: NextRequest) {
       })
 
       // Format response with job details
-      const formattedSavedJobs = savedJobs.docs.map(savedJob => {
+      const formattedSavedJobs = savedJobs.docs.map((savedJob) => {
         const job = savedJob.job as any // Type assertion for populated job
-        
+
         return {
           id: savedJob.id,
           savedAt: savedJob.savedAt,
@@ -65,21 +62,18 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        savedJobs: formattedSavedJobs,
+        docs: formattedSavedJobs,
         total: savedJobs.totalDocs,
       })
     } catch (fetchError) {
       console.error('Error fetching saved jobs:', fetchError)
       return NextResponse.json(
         { success: false, message: 'Failed to fetch saved jobs' },
-        { status: 500 }
+        { status: 500 },
       )
     }
   } catch (error) {
     console.error('Saved jobs error:', error)
-    return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 })
   }
 }
