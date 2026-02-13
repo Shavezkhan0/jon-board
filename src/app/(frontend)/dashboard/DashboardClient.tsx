@@ -64,7 +64,7 @@ export default function DashboardClient({
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen w-full">
       {/* Sidebar - Hidden on mobile */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-slate-900">
         {' '}
