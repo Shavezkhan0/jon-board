@@ -37,8 +37,8 @@ export default buildConfig({
   serverURL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   cors: [process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000', 'http://localhost:3000'],
   email: nodemailerAdapter({
-    defaultFromAddress: 'noreply@jobboardpro.com',
-    defaultFromName: 'JobBoard Pro',
+    defaultFromAddress: process.env.EMAIL_FROM || 'onboarding@resend.dev',
+    defaultFromName: process.env.EMAIL_FROM_NAME || 'JobBoard Pro',
     transport: nodemailer.createTransport({
       host: 'smtp.resend.com',
       port: 465,
