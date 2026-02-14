@@ -35,11 +35,20 @@ export const Jobs: CollectionConfig = {
       },
     },
     {
-      name: 'companyLogo',
-      type: 'upload',
-      relationTo: 'media',
+      name: 'companyLogoUrl',
+      type: 'text',
       admin: {
-        description: 'Company logo',
+        description: 'Cloudinary URL for company logo',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'companyLogoPublicId',
+      type: 'text',
+      admin: {
+        description: 'Cloudinary public ID (for deletion)',
+        readOnly: true,
+        hidden: true,
       },
     },
     {

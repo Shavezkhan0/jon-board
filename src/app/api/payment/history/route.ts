@@ -8,10 +8,7 @@ export async function GET(request: NextRequest) {
     // Get current user
     const user = await getCurrentUser()
     if (!user) {
-      return NextResponse.json(
-        { success: false, message: 'Not authenticated' },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
     }
 
     const payload = await getPayload({ config })
@@ -31,7 +28,7 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        subscriptions: subscriptions.docs.map(sub => ({
+        docs: subscriptions.docs.map((sub) => ({
           id: sub.id,
           userEmail: sub.userEmail,
           plan: sub.plan,
@@ -50,14 +47,11 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching payment history:', fetchError)
       return NextResponse.json(
         { success: false, message: 'Failed to fetch payment history' },
-        { status: 500 }
+        { status: 500 },
       )
     }
   } catch (error) {
     console.error('Payment history error:', error)
-    return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 })
   }
 }

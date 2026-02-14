@@ -8,6 +8,8 @@ interface User {
   fullName: string
   phone?: string
   profilePhoto?: any
+  profilePhotoUrl?: string | null
+  profilePhotoPublicId?: string | null
   subscriptionStatus: string
   subscriptionExpiry?: string
   subscriptionPlan?: string

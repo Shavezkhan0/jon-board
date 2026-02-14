@@ -143,9 +143,13 @@ export interface User {
    */
   phone?: string | null;
   /**
-   * User profile photo
+   * Cloudinary URL for profile photo
    */
-  profilePhoto?: (string | null) | Media;
+  profilePhotoUrl?: string | null;
+  /**
+   * Cloudinary public ID (for deletion)
+   */
+  profilePhotoPublicId?: string | null;
   /**
    * URL to user's resume
    */
@@ -277,9 +281,13 @@ export interface Job {
    */
   company: string;
   /**
-   * Company logo
+   * Cloudinary URL for company logo
    */
-  companyLogo?: (string | null) | Media;
+  companyLogoUrl?: string | null;
+  /**
+   * Cloudinary public ID (for deletion)
+   */
+  companyLogoPublicId?: string | null;
   /**
    * Company website URL
    */
@@ -723,7 +731,8 @@ export interface UsersSelect<T extends boolean = true> {
   roles?: T;
   fullName?: T;
   phone?: T;
-  profilePhoto?: T;
+  profilePhotoUrl?: T;
+  profilePhotoPublicId?: T;
   resumeUrl?: T;
   skills?:
     | T
@@ -819,7 +828,8 @@ export interface JobsSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
   company?: T;
-  companyLogo?: T;
+  companyLogoUrl?: T;
+  companyLogoPublicId?: T;
   companyWebsite?: T;
   location?: T;
   workMode?: T;
