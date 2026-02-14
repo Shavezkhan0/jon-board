@@ -112,15 +112,17 @@ export default function JobCard({ job, isSaved, onSaveToggle, isSubscribed }: Jo
       <Link href={`/jobs/${job.slug}`} className="block p-6">
         {/* Company Logo */}
         <div className="flex items-center mb-4">
-          {job.companyLogo ? (
+          {job.companyLogoUrl ? (
             <img
-              src={job.companyLogo.url}
-              alt={job.company}
-              className="w-12 h-12 rounded-lg object-cover mr-3"
+              src={job.companyLogoUrl}
+              alt={`${job.company} logo`}
+              className="w-12 h-12 rounded-xl object-contain bg-white p-1 flex-shrink-0"
             />
           ) : (
-            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold mr-3">
-              {getCompanyInitials(job.company)}
+            <div className="w-12 h-12 rounded-xl bg-slate-700 flex items-center justify-center flex-shrink-0">
+              <span className="text-white font-bold text-lg">
+                {job.company?.charAt(0)?.toUpperCase() || 'C'}
+              </span>
             </div>
           )}
           <div className="flex-1 min-w-0">

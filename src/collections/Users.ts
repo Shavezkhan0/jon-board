@@ -103,11 +103,20 @@ export const Users: CollectionConfig = {
       },
     },
     {
-      name: 'profilePhoto',
-      type: 'upload',
-      relationTo: 'media',
+      name: 'profilePhotoUrl',
+      type: 'text',
       admin: {
-        description: 'User profile photo',
+        description: 'Cloudinary URL for profile photo',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'profilePhotoPublicId',
+      type: 'text',
+      admin: {
+        description: 'Cloudinary public ID (for deletion)',
+        readOnly: true,
+        hidden: true,
       },
     },
     {

@@ -145,15 +145,17 @@ export default function JobDetailClient({
             <div className="bg-white rounded-lg border border-slate-200 p-6 mb-6">
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-4">
-                  {job.companyLogo ? (
+                  {job.companyLogoUrl ? (
                     <img
-                      src={job.companyLogo.url}
-                      alt={job.company}
-                      className="w-16 h-16 rounded-lg object-cover"
+                      src={job.companyLogoUrl}
+                      alt={`${job.company} logo`}
+                      className="w-20 h-20 rounded-2xl object-contain bg-white p-2 shadow-lg"
                     />
                   ) : (
-                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
-                      {getCompanyInitials(job.company)}
+                    <div className="w-20 h-20 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg">
+                      <span className="text-white font-bold text-3xl">
+                        {job.company?.charAt(0)?.toUpperCase() || 'C'}
+                      </span>
                     </div>
                   )}
                   <div>

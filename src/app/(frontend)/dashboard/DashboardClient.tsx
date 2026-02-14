@@ -22,12 +22,13 @@ interface DashboardClientProps {
 }
 
 export default function DashboardClient({
-  user,
+  user: initialUser,
   subscriptionStatus,
   savedJobsCount,
   searchParams,
 }: DashboardClientProps) {
   const [activeTab, setActiveTab] = useState('overview')
+  const [user, setUser] = useState<User>(initialUser)
   const params = useParams()
   const router = useRouter()
 
@@ -49,7 +50,7 @@ export default function DashboardClient({
       case 'saved':
         return <SavedJobsPanel />
       case 'profile':
-        return <ProfilePanel user={user} />
+        return <ProfilePanel user={user} setUser={setUser} />
       case 'subscription':
         return <SubscriptionPanel subscriptionStatus={subscriptionStatus} />
       default:
@@ -72,20 +73,20 @@ export default function DashboardClient({
           {/* User Info */}
           <div className="p-6 border-b border-slate-800">
             <div className="flex items-center space-x-3">
-              {user.profilePhoto && typeof user.profilePhoto !== 'string' ? (
+              {user.profilePhotoUrl ? (
                 <img
-                  src={user.profilePhoto.url || ''}
-                  alt={user.fullName}
-                  className="w-10 h-10 rounded-full object-cover"
+                  src={user.profilePhotoUrl}
+                  alt={user?.fullName || 'User'}
+                  className="w-12 h-12 rounded-full object-cover ring-2 ring-slate-700 flex-shrink-0"
                 />
               ) : (
-                <div className="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-white font-medium">
-                  {user.fullName
-                    .split(' ')
-                    .map((word) => word[0])
+                <div className="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                  {user?.fullName
+                    ?.split(' ')
+                    .map((n: string) => n[0])
                     .join('')
                     .toUpperCase()
-                    .slice(0, 2)}
+                    .substring(0, 2) || 'U'}
                 </div>
               )}
               <div className="flex-1 min-w-0">

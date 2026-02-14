@@ -8,11 +8,18 @@ export interface SubscriptionResponse {
 
 export interface PaymentHistoryItem {
   id: string
-  date: string
+  userEmail?: string
   plan: 'monthly' | 'quarterly' | 'yearly'
+  status: 'active' | 'expired' | 'pending' | 'cancelled'
   amount: number
   currency: 'INR' | 'USD'
-  status: 'active' | 'expired' | 'pending'
+  startedAt?: string
+  expiresAt?: string
+  razorpayOrderId?: string
+  razorpayPaymentId?: string
+  isVerified?: boolean
+  createdAt?: string
+  date?: string
   invoiceUrl?: string
 }
 

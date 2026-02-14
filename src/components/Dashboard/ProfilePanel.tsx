@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import type { User } from '@/types'
 import { useToast } from '@/components/ui/Toast'
+import ProfilePhotoUpload from '@/components/Upload/ProfilePhotoUpload'
 
 interface ProfilePanelProps {
   user: User
+  setUser: (user: User) => void
 }
 
 interface ProfileFormData {
@@ -24,15 +26,11 @@ interface PasswordFormData {
   confirmNewPassword: string
 }
 
-export default function ProfilePanel({ user }: ProfilePanelProps) {
+export default function ProfilePanel({ user, setUser }: ProfilePanelProps) {
   const [activeSection, setActiveSection] = useState<
     'personal' | 'professional' | 'skills' | 'account'
   >('personal')
   const [showPasswordModal, setShowPasswordModal] = useState(false)
-  const [profilePhoto, setProfilePhoto] = useState<File | null>(null)
-  const [profilePhotoPreview, setProfilePhotoPreview] = useState<string>(
-    (typeof user.profilePhoto !== 'string' && user.profilePhoto?.url) || '',
-  )
   const [newSkill, setNewSkill] = useState('')
   const { toast } = useToast()
 
@@ -61,7 +59,7 @@ export default function ProfilePanel({ user }: ProfilePanelProps) {
       formData.linkedinUrl,
       formData.resumeUrl,
       formData.skills.length > 0,
-      profilePhotoPreview,
+      user.profilePhotoUrl,
     ]
     const completed = fields.filter((field) => field && field !== '').length
     return Math.round((completed / fields.length) * 100)
@@ -70,18 +68,6 @@ export default function ProfilePanel({ user }: ProfilePanelProps) {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handleProfilePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setProfilePhoto(file)
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setProfilePhotoPreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
   }
 
   const handleAddSkill = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -211,55 +197,19 @@ export default function ProfilePanel({ user }: ProfilePanelProps) {
         {/* Profile Photo */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-4">Profile Photo</h2>
-          <div className="flex items-center space-x-6">
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full overflow-hidden bg-slate-100">
-                {profilePhotoPreview ? (
-                  <img
-                    src={profilePhotoPreview}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <svg
-                      className="w-12 h-12 text-slate-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
-                  </div>
-                )}
-              </div>
-              <label className="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full cursor-pointer hover:bg-indigo-700 transition-colors">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                  />
-                </svg>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleProfilePhotoChange}
-                  className="hidden"
-                />
-              </label>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-900">Upload a photo</p>
-              <p className="text-sm text-slate-600">JPG, PNG or GIF. Max size 2MB</p>
-            </div>
-          </div>
+          <ProfilePhotoUpload
+            currentPhotoUrl={user.profilePhotoUrl || null}
+            userName={user.fullName || user.email || 'User'}
+            userId={user.id}
+            onUploadSuccess={(newUrl) => {
+              setUser({ ...user, profilePhotoUrl: newUrl })
+              toast('Profile photo updated!', 'success')
+            }}
+            onDeleteSuccess={() => {
+              setUser({ ...user, profilePhotoUrl: null })
+              toast('Profile photo removed', 'info')
+            }}
+          />
         </div>
 
         {/* Section Tabs */}

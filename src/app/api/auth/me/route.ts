@@ -47,6 +47,11 @@ export async function GET(request: NextRequest) {
       }
 
       // Return sanitized user object
+      const userWithPhoto = user as unknown as {
+        profilePhoto?: any
+        profilePhotoUrl?: string | null
+        profilePhotoPublicId?: string | null
+      }
       return NextResponse.json({
         success: true,
         user: {
@@ -54,7 +59,9 @@ export async function GET(request: NextRequest) {
           email: user.email,
           fullName: user.fullName,
           phone: user.phone,
-          profilePhoto: user.profilePhoto,
+          profilePhoto: userWithPhoto.profilePhoto,
+          profilePhotoUrl: userWithPhoto.profilePhotoUrl || null,
+          profilePhotoPublicId: userWithPhoto.profilePhotoPublicId || null,
           subscriptionStatus: user.subscriptionStatus,
           subscriptionExpiry: user.subscriptionExpiry,
           subscriptionPlan: user.subscriptionPlan,

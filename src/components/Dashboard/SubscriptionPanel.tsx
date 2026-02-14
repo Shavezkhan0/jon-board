@@ -68,10 +68,10 @@ export default function SubscriptionPanel({ subscriptionStatus }: SubscriptionPa
     // Create a simple PDF receipt (in a real app, you'd use a PDF library)
     const receiptContent = `
 INVOICE #${item.id}
-Date: ${formatDate(item.date)}
-Plan: ${item.plan}
-Amount: ${item.currency === 'USD' ? '$' : '₹'}${item.amount}
-Status: ${item.status}
+Date: ${formatDate(item.startedAt || item.createdAt || item.date || '')}
+Plan: ${item.plan || 'monthly'}
+Amount: ${(item.currency || 'INR') === 'USD' ? '$' : '₹'}${item.amount || 0}
+Status: ${item.status || 'pending'}
 
 Thank you for your subscription!
     `.trim()
@@ -228,18 +228,19 @@ Thank you for your subscription!
                   {paymentHistory.map((item) => (
                     <tr key={item.id} className="hover:bg-slate-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                        {formatDate(item.date)}
+                        {formatDate(item.startedAt || item.createdAt || item.date || '')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                        {item.plan.charAt(0).toUpperCase() + item.plan.slice(1)}
+                        {(item.plan || 'monthly').charAt(0).toUpperCase() +
+                          (item.plan || 'monthly').slice(1)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                        {item.currency === 'USD' ? '$' : '₹'}
-                        {item.amount}
+                        {(item.currency || 'INR') === 'USD' ? '$' : '₹'}
+                        {item.amount || 0}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(item.status)}`}
+                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(item.status || 'pending')}`}
                         >
                           {item.status}
                         </span>

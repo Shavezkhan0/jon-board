@@ -80,17 +80,20 @@ export default function Navbar() {
                       onClick={() => setShowProfileMenu(!showProfileMenu)}
                       className="flex text-sm border-2 border-transparent rounded-full focus:outline-none focus:border-gray-300 transition-all"
                     >
-                      {user.profilePhoto &&
-                      typeof user.profilePhoto !== 'string' &&
-                      user.profilePhoto.url ? (
+                      {user.profilePhotoUrl ? (
                         <img
-                          className="h-9 w-9 rounded-full object-cover"
-                          src={user.profilePhoto.url}
-                          alt={user.fullName}
+                          className="h-9 w-9 rounded-full object-cover ring-2 ring-slate-700"
+                          src={user.profilePhotoUrl}
+                          alt={user.fullName || 'User'}
                         />
                       ) : (
-                        <div className="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
-                          {getInitials(user.fullName)}
+                        <div className="h-9 w-9 rounded-full bg-indigo-600 flex items-center justify-center text-white text-sm font-bold">
+                          {user?.fullName
+                            ?.split(' ')
+                            .map((n: string) => n[0])
+                            .join('')
+                            .toUpperCase()
+                            .substring(0, 2) || 'U'}
                         </div>
                       )}
                     </button>
@@ -215,17 +218,20 @@ export default function Navbar() {
               <>
                 <div className="flex items-center px-4 mb-4">
                   <div className="flex-shrink-0">
-                    {user.profilePhoto &&
-                    typeof user.profilePhoto !== 'string' &&
-                    user.profilePhoto.url ? (
+                    {user.profilePhotoUrl ? (
                       <img
-                        className="h-10 w-10 rounded-full object-cover"
-                        src={user.profilePhoto.url}
-                        alt={user.fullName}
+                        className="h-10 w-10 rounded-full object-cover ring-2 ring-slate-700"
+                        src={user.profilePhotoUrl}
+                        alt={user.fullName || 'User'}
                       />
                     ) : (
-                      <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
-                        {getInitials(user.fullName)}
+                      <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold">
+                        {user?.fullName
+                          ?.split(' ')
+                          .map((n: string) => n[0])
+                          .join('')
+                          .toUpperCase()
+                          .substring(0, 2) || 'U'}
                       </div>
                     )}
                   </div>

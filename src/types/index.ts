@@ -10,6 +10,8 @@ export interface Job {
     filename: string
     alt: string
   } | null
+  companyLogoUrl?: string | null
+  companyLogoPublicId?: string | null
   companyWebsite?: string | null
   location: string
   workMode: 'office' | 'remote' | 'hybrid' | 'flexible'
@@ -84,6 +86,8 @@ export interface User {
         alt: string
       }
     | null
+  profilePhotoUrl?: string | null
+  profilePhotoPublicId?: string | null
   resumeUrl?: string | null
   skills?: Array<{ skill: string }> | null
   currentJobTitle?: string | null
