@@ -7,7 +7,7 @@ import ProfilePhotoUpload from '@/components/Upload/ProfilePhotoUpload'
 
 interface ProfilePanelProps {
   user: User
-  setUser: (user: User) => void
+  setUser?: (user: User) => void
 }
 
 interface ProfileFormData {
@@ -26,7 +26,8 @@ interface PasswordFormData {
   confirmNewPassword: string
 }
 
-export default function ProfilePanel({ user, setUser }: ProfilePanelProps) {
+export default function ProfilePanel({ user: initialUser, setUser }: ProfilePanelProps) {
+  const [user, setCurrentUser] = useState<User>(initialUser)
   const [activeSection, setActiveSection] = useState<
     'personal' | 'professional' | 'skills' | 'account'
   >('personal')
@@ -191,11 +192,15 @@ export default function ProfilePanel({ user, setUser }: ProfilePanelProps) {
           userName={user.fullName || user.email || 'User'}
           userId={user.id}
           onUploadSuccess={(newUrl) => {
-            setUser({ ...user, profilePhotoUrl: newUrl })
+            const updatedUser = { ...user, profilePhotoUrl: newUrl }
+            setCurrentUser(updatedUser)
+            if (setUser) setUser(updatedUser)
             toast('Profile photo updated!', 'success')
           }}
           onDeleteSuccess={() => {
-            setUser({ ...user, profilePhotoUrl: null })
+            const updatedUser = { ...user, profilePhotoUrl: null }
+            setCurrentUser(updatedUser)
+            if (setUser) setUser(updatedUser)
             toast('Profile photo removed', 'info')
           }}
         />

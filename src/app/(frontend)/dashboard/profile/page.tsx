@@ -1,10 +1,6 @@
-'use client'
-
-import { useState, useEffect } from 'react'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import ProfileClient from '@/components/Dashboard/ProfilePanel'
-import type { User } from '@/types'
 
 async function getCurrentUser() {
   try {
@@ -35,27 +31,12 @@ async function getCurrentUser() {
   }
 }
 
-export default function ProfilePage() {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+export default async function ProfilePage() {
+  const user = await getCurrentUser()
 
-  useEffect(() => {
-    getCurrentUser().then((userData) => {
-      if (!userData) {
-        redirect('/login')
-      }
-      setUser(userData)
-      setIsLoading(false)
-    })
-  }, [])
-
-  if (isLoading || !user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    )
+  if (!user) {
+    redirect('/login')
   }
 
-  return <ProfileClient user={user} setUser={setUser} />
+  return <ProfileClient user={user} />
 }
